@@ -56,3 +56,10 @@ docs/_build/
 
 # PyBuilder
 target/
+
+
+# Original Training File
+Train.csv
+.png
+
+
