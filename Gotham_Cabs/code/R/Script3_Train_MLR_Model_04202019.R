@@ -1,5 +1,7 @@
 ## REFERENCES_____________________________________________________________________________
-'MLR Output:      https://www.graphpad.com/support/faq/standard-deviation-of-the-residuals-syx-rmse-rsdr/'
+'MLR Output:      https://www.graphpad.com/support/faq/standard-deviation-of-the-residuals-syx-rmse-rsdr/
+                  http://www.sthda.com/english/articles/38-regression-model-validation/158-regression-model-accuracy-metrics-r-square-aic-bic-cp-and-more/
+'
 
 ## CLEAR NAMESPACE________________________________________________________________________
 rm(list = ls()) 
@@ -58,12 +60,11 @@ m3.summary
 
 # Make Prediction
 m3.mlr.predict    = predict(m3.mlr, s1.50k.nolimits_ran)
-m3.mlr.ss         = sum((s1.50k.nolimits_ran$duration - m3.mlr.predict)^2)
-m3.mlr.mse        = mean((s1.50k.nolimits_ran$duration - m3.mlr.predict)^2)
+m3.mlr.ss         = sqrt(sum((s1.50k.nolimits_ran$duration - m3.mlr.predict)^2) / (nrow(s1.50k.nolimits_ran) -2) )
+m3.mlr.ss         # Residual Standard Error = 285.62
 
 
 ## M2:    MLR - TEST ALL DATASETS______________________________________________________________________
-
 
 # Train Model - s1-S6
 training_sets <- list(s1.50k.nolimits_ran, s2.100k.nolimits_ran, s3.250k.nolimits_ran, s4.50k.wlimits_ran, 
@@ -71,6 +72,7 @@ training_sets <- list(s1.50k.nolimits_ran, s2.100k.nolimits_ran, s3.250k.nolimit
 m2.results    <- data.frame('Index' = 1)
 Count          = 0
 
+# Get R2:  All Datasets
 for (i in training_sets){
   lr = lm(duration ~ ., data = i)
   lr.summary = summary(lr)
@@ -80,10 +82,25 @@ for (i in training_sets){
   print(paste('Model =>', Count, 'completed'))
 }
 
+# Write Results To File
 setwd('/home/ccirelli2/Desktop/Repositories/ML_Final_Project_2019/Gotham_Cabs/output')
 write.csv(m2.results, 'm2_mlr_r2_datasets_1to6_04202019.csv')
-
 print('hello world')
+
+# Generate Graph of Results
+m2.r2 = c(m2.results$Index, m2.results$V2, m2.results$V3, m2.results$V4, m2.results$V5, m2.results$V6)
+barplot(m2.r2, names.arg = c('s1_50k', 's2_100k', 's3_250k', 's4_50k.wl', 
+                             's5_100k.wl', 's6_250k.wl'), main = 'M2 MLR - ALL DATASETS', 
+        xlab = 'Datasets', ylab = 'R2')
+
+
+# Get RSE:  All Datasets
+
+
+
+
+
+
 
 
 
