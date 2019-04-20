@@ -27,7 +27,6 @@ rm(list = ls())
 
 # LOAD LIBRARIES
 library(RMySQL)
-install.packages("psych")
 library(psych)
 
 # SETUP CONNECTION TO DB
@@ -53,11 +52,12 @@ result_q1 = fetch(query1_alldata, n = -1)
 describe.by(result_q1)
 
 # Plot Durations
-plot(result_q1$duration)
-boxplot(result_q1$duration)
-hist(result_q1$duration)
+plot(result_q1$duration^2, main = 'Scatter Plot - Duration', 
+    ylab = 'Duration^2')                                          # Shows that we do have some outliers in the data
+boxplot(result_q1$duration, main = 'Boxplot - Duration')          # Definitely have outliers
+hist(result_q1$duration)                                          # Maybe the cut point is around 4000
 d = density(result_q1$duration)
-plot(d)
+plot(d, main = 'Density Plot - Duration')
   
 # Query 2:  Average Duration By Month
 query2_rel_month_duration = dbSendQuery(mydb, '
@@ -175,10 +175,41 @@ result_q7 = fetch(query7_duration_vs_distance, n = -1)
 plot(log(result_q7$distance), log(result_q7$duration), main = 'Distance vs Duration', xlab = 'Distance', ylab = 'Duration', col=c('red', 'blue'))
  
 
+# Query 8:    Duration vs Speed
+
+query8_duration_vs_speed = dbSendQuery(mydb, '
+      SELECT 	
+		                    
+      duration, 
+      speed
+       
+      FROM GSU.ML_FinProj_GothamCab_Train
+      WHERE duration < 4000
+      ORDER BY RAND()
+      LIMIT 100000;
+                             ')
+result_q8 = fetch(query8_duration_vs_speed, n = -1)
+plot(log(result_q8$speed), log(result_q8$duration), main = 'Duration vs Speed', xlab = 'Speed', ylab = 'Duration', col=c('red', 'blue'))
 
 
+# Query 9:  Speed 
+query9_speed = dbSendQuery(mydb, '
+      SELECT 	
+		                    
+      speed
+       
+      FROM GSU.ML_FinProj_GothamCab_Train
+      ORDER BY RAND()
+      LIMIT 100000;
+                             ')
+result_q9 = fetch(query9_speed, n = -1)
 
-
-
+# Plots
+plot(result_q9, main = 'Scatter Plot - Speed', 
+     ylab = 'Speed')                                          # 
+boxplot(result_q9, main = 'Boxplot - Speed')                  # 
+hist(result_q9$speed)                                               # 
+d = density(result_q9$speed)
+plot(d, main = 'Density Plot - Speed')
 
 
