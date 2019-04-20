@@ -1,35 +1,3 @@
-# TRAIN LINEAR REGRESSION MODELS
-'DOCUMENTATION
-
-  Data-----------------------------------------------
-  - Year:             Drop as all values are for 2034
-  - Pickup_datetime:  Replace with derived values weekday, hour, day
-  - Factors:          Try converting 
-
-  Sample----------------------------------------------
-  - Statification:    Do we need to statify our sample based on the target variable?  
-  - X & Y Coord:      Do we need to create dummy variables for these?
-                      ?? Do we even need the X & Y coordinates if we have duration?
-
-  Approach---------------------------------------------
-  - m1                a.) Simply Linear Regression
-                      b.) Convert pickup, dropoff, weekday, hour, day to factors. 
-                      c.) 10 Kfold CV
-                      d.) Polynomials
-                      e.) Take log of features & target
-
-
-  - m2                a.) Multi-linear regression. 
-                      b.) Backward & Forward Propogation
-                      c.) Ridge & Lasso regression. 
-
-  Code Documentation------------------------------------
-  - Create Factors            https://www.guru99.com/r-factor-categorical-continuous.html
-  - Stepwise LR Selection     http://www.sthda.com/english/articles/37-model-selection-essentials-in-r/154-stepwise-regression-essentials-in-r/
-
-'
-
-
 ## CLEAR NAMESPACE________________________________________________________________________
 rm(list = ls()) 
 
@@ -37,6 +5,8 @@ rm(list = ls())
 library(lattice)
 library(ggplot2)
 library(caret)  # used for parameter tuning
+library(fastDummies)
+
 
 ## CREATE DATASET_________________________________________________________________________
 setwd('/home/ccirelli2/Desktop/Repositories/ML_Final_Project_2019/Gotham_Cabs/data')
@@ -49,6 +19,26 @@ s6.250k.wlimits        = read.csv('sample2_wlimits_250k.csv')[2:12]
 
 # SET SEED FOR ENTIRE CODE________________________________________________________________
 set.seed(123)                                                                 
+
+# CREATE DUMMY VARIABLES__________________________________________________________________
+s1.50k.nolimits$pickup_x <- dummy_cols(s1.50k.nolimits$pickup_x)
+s1.50k.nolimits$pickup_y <- dummy_cols(s1.50k.nolimits$pickup_y)
+s1.50k.nolimits$dropoff_x <- dummy_cols(s1.50k.nolimits$dropoff_x)
+s1.50k.nolimits$dropoff_y <- dummy_cols(s1.50k.nolimits$dropoff_y)
+s1.50k.nolimits$weekday <- dummy_cols(s1.50k.nolimits$weekday)
+s1.50k.nolimits$hour_ <- dummy_cols(s1.50k.nolimits$hour_)
+s1.50k.nolimits$day_ <- dummy_cols(s1.50k.nolimits$day_)
+s1.50k.nolimits$month_ <- dummy_cols(s1.50k.nolimits$month_)
+
+s4.50k.wlimits$pickup_x <- dummy_cols(s4.50k.wlimits$pickup_x)
+s4.50k.wlimits$pickup_y <- dummy_cols(s4.50k.wlimits$pickup_y)
+s4.50k.wlimits$dropoff_x <- dummy_cols(s4.50k.wlimits$dropoff_x)
+s4.50k.wlimits$dropoff_y <- dummy_cols(s4.50k.wlimits$dropoff_y)
+s4.50k.wlimits$weekday <- dummy_cols(s4.50k.wlimits$weekday)
+s4.50k.wlimits$hour_ <- dummy_cols(s4.50k.wlimits$hour_)
+s4.50k.wlimits$day_ <- dummy_cols(s4.50k.wlimits$day_)
+s4.50k.wlimits$month_ <- dummy_cols(s4.50k.wlimits$month_)
+
 
 
 # TRAIN / TEST SPLIT______________________________________________________________________
@@ -71,6 +61,7 @@ s6.test = s6.250k.wlimits[1:  (nrow(s6.250k.wlimits)  * .3), ]
 
 
 ## M1:   Duration vs Distance_______________________________________________________________________________________
+head(s1.train)
 m1.lr            = lm(duration ~ distance, data = s1.train)
 m1.summary       = summary(m1.lr)
 m1.summary
