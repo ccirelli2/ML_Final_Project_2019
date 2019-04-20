@@ -67,39 +67,41 @@ s4.test = s4.100k.wlimits[1:  (nrow(s4.100k.wlimits)  * .3), ]
 s5.test = s5.250k.wlimits[1:  (nrow(s5.250k.wlimits)  * .3), ]
 
 
-# Dataset_2 - Create Factors From Continous Variables---------------------------------------
-s1.50k.pp = s1.50k.nopp
-s1.50k.pp$pickup_x     <- factor(s1.50k.pp$pickup_x)
-s1.50k.pp$pickup_y   <- factor(s1.50k.pp$pickup_y) 
-s1.50k.pp$dropoff_x   <- factor(s1.50k.pp$dropoff_x) 
-s1.50k.pp$dropoff_y   <- factor(s1.50k.pp$dropoff_y) 
-s1.50k.pp$weekday   <- factor(s1.50k.pp$weekday, order = TRUE)              # ordinal 
-s1.50k.pp$hour_   <- factor(s1.50k.pp$hour_, order = TRUE)                  # ordinal
-s1.50k.pp$day_   <- factor(s1.50k.pp$day_, order = TRUE)                    # ordinal
-s1.50k.pp$Month_   <- factor(s1.50k.pp$Month_, order = TRUE)                # ordinal
-is.factor(s1.50k.pp$weekday)                                                  # Check if a factor
-is.ordered((s1.50k.pp$weekday))                                               # Check if ordered
+# 1.) Regression - Distance & Speed________________________________________________________
+'Data:   See if we get a better R2 and MSE using the larger datasets'
 
-# Train / Test Split
-s1.50k.pp        = s1.50k.pp[sample(nrow(s1.50k.pp)),]                  # sample automatically reorders the elements.  
-                                                                        # Within the index of our dataframe, we pass sample.   Within sample() we pass the total num of rows. 
-s1.50k.pp.sample = 0.7 * nrow(s1.50k.pp)                                # Sample = 70% of all observations. 
-s1.50k.pp.train  = s1.50k.pp[1:s1.50k.pp.sample, ]                      # define training set as 1 to (.7 * total of number of observations)
-s1.50k.pp.test   = s1.50k.pp[s1.50k.pp.sample : nrow(s1.50k.pp),]     # test set 1 - nrow(train)
+## M1:   Duration vs Distance--------------------------------------------------------------
+m1.lr            = lm(duration ~ distance, data = s1.train)
+m1.summary       = summary(m1.lr)
+m1.train.r2      = m1.summary$r.squared
+m1.train.ss      = sum(m1.summary$residuals^2) 
+m1.train.mse     = mean(m1.summary$residuals^2) 
+
+# M1 Prediction
+m1.lr.predict    = predict(m1.lr, s1.test)
+m1.ss            = sum((s1.test$duration - m1.lr.predict)^2) # Calculate Square Root of Residual Sum of Squared Errors. 
+m1.mse           = mean((s1.test$duration - m1.lr.predict)^2)
 
 
 
-## Simple Linear Regression_________________________________________________________
+## M2:  Duration vs Speed------------------------------------------------------------------
 
+m1.lr            = lm(duration ~ distance, data = s1.train)
+m1.summary       = summary(m1.lr)
+m1.train.r2      = m1.summary$r.squared
+m1.train.ss      = sum(m1.summary$residuals^2) 
+m1.train.mse     = mean(m1.summary$residuals^2) 
 
-# 1.) Regression On Each Feature - No PreProcessing
+# 2.) Regression Iterate Training Sets to See if There Is a Difference-------------------
+training_sets = c(s1.train, s2.train, s3.train, s4.train, s5.train)
 
-# Duration vs Distance
-m1.lr = lm(duration ~ distance, data = s1.50k.nopp.train)
-summary(m1.lr)
-nnnm1.lr.predict = predict(m1.lr, s1.50k.nopp.test)
-m1.mse = sqrt(sum(s1.50k.nopp.test$duration - m1.lr.predict)^2) # Calculate Square Root of Residual Sum of Squared Errors. 
-m1.mse
+for (i in training_sets){
+  lr = lm(duration ~ distance, data = i)
+  lr.summary = summary(lr)
+  print(lr.summary$r.squared)
+  
+  
+}
 
 
 # Duration vs All Features
@@ -114,23 +116,6 @@ m1.r2                                                                          #
 setwd('/home/ccirelli2/Desktop/GSU/2019_Spring/ML_Course/2019_GSU_ML_Final_Project/Gotham_Cabs/output')
 write.table(m1.r2, 'Simple_lr_model1_r2_train_04192019.xlsx')                        # Write Results to Excel
 
-
-# 2.) Regression On Each Feature - Features As Factors
-m2.lr = lm(duration ~ distance, data = s1.50k.pp.train)
-summary(m2.lr)
-
-m2.r2 = list()                                                        # Define List to Catch R2 values
-
-for (i in names(s1.50k.pp.train[2:10])){
-  m1.train = lm(duration ~ get(i), data = s1.50k.pp.train)
-  m1.summary = summary(m1.train)
-  m2.r2[[i]] = round(m1.summary$r.squared, 4)
-  
-}
-
-m2.r2                                                                 # Print Results
-setwd('/home/ccirelli2/Desktop/GSU/2019_Spring/ML_Course/2019_GSU_ML_Final_Project/Gotham_Cabs/output')
-write.table(m2.r2, 'Simple_lr_model2_r2_04192019_train.xlsx')                        # Write Results to Excel
 
 
 
