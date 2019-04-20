@@ -84,19 +84,19 @@ m1.ss            = sum((s1.test$duration - m1.lr.predict)^2) # Calculate Square 
 m1.mse           = mean((s1.test$duration - m1.lr.predict)^2)
 
 
-# Train Model - s1-3
+# GET RSE ALL DATASETS
 training_sets <- list(s1.train, s2.train, s3.train, s4.train, s5.train, s6.train)
 set.names     <- c('s1_50k', 's2_100k', 's3_250k', 
                    's4_50k.wl', 's5_100k.wl', 's6_250k.wl')
-m1.results    <- data.frame('Index' = 1)
+m1.rse        <- data.frame('Index' = 1)
 Count          = 0
 
 for (i in training_sets){
-  lr = lm(duration ~ distance, data = i)
+  lr         = lm(duration ~ distance, data = i)
   lr.summary = summary(lr)
-  r.squared  = round(lr.summary$r.squared,4)
+  rse        = sqrt(sum(lr.summary$residuals^2) / length(lr.summary$residuals)) 
   Count = Count + 1
-  m1.results[Count] <- r.squared
+  m1.rse[Count] <- rse
   print(paste('Model =>', Count, 'completed'))
 }
 
@@ -105,10 +105,10 @@ setwd('/home/ccirelli2/Desktop/Repositories/ML_Final_Project_2019/Gotham_Cabs/ou
 write.csv(m1.results, 'm1_lr_r2_datasets_1to6_04202019.csv')
 
 # Generate Graph of Resuls
-m2.r2 = c(m1.results$Index, m1.results$V2, m1.results$V3, m1.results$V4, m1.results$V5, m1.results$V6)
-barplot(m2.r2, names.arg = c('s1_50k', 's2_100k', 's3_250k', 's4_50k.wl', 
+m1.rse_list = c(m1.rse$Index, m1.rse$V2, m1.rse$V3, m1.rse$V4, m1.rse$V5, m1.rse$V6)
+barplot(m1.rse_list, names.arg = c('s1_50k', 's2_100k', 's3_250k', 's4_50k.wl', 
                              's5_100k.wl', 's6_250k.wl'), main = 'M1 LR - ALL DATASETS', 
-        xlab = 'Datasets', ylab = 'R2')
+        xlab = 'Datasets', ylab = 'RSE')
 
 
 

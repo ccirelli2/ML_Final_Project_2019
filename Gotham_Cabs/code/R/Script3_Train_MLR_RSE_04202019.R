@@ -60,8 +60,10 @@ m3.summary
 
 # Make Prediction
 m3.mlr.predict    = predict(m3.mlr, s1.50k.nolimits_ran)
-m3.mlr.ss         = sqrt(sum((s1.50k.nolimits_ran$duration - m3.mlr.predict)^2) / (nrow(s1.50k.nolimits_ran) -2) )
-m3.mlr.ss         # Residual Standard Error = 285.62
+m3.mlr.rse         = sqrt(sum((s1.50k.nolimits_ran$duration - m3.mlr.predict)^2) / (nrow(s1.50k.nolimits_ran) -2) )
+m3.mlr.rse         # Residual Standard Error = 285.62
+
+
 
 
 ## M2:    MLR - TEST ALL DATASETS______________________________________________________________________
@@ -72,7 +74,7 @@ training_sets <- list(s1.50k.nolimits_ran, s2.100k.nolimits_ran, s3.250k.nolimit
 m2.results    <- data.frame('Index' = 1)
 Count          = 0
 
-# Get R2:  All Datasets
+# Get R2:  All Datasets---------------------------------------------------------------------------------
 for (i in training_sets){
   lr = lm(duration ~ ., data = i)
   lr.summary = summary(lr)
@@ -94,55 +96,28 @@ barplot(m2.r2, names.arg = c('s1_50k', 's2_100k', 's3_250k', 's4_50k.wl',
         xlab = 'Datasets', ylab = 'R2')
 
 
-# Get RSE:  All Datasets
+
+# Get RSE:  All Datasets--------------------------------------------------------------------------------
+training_sets <- list(s1.50k.nolimits_ran, s2.100k.nolimits_ran, s3.250k.nolimits_ran, s4.50k.wlimits_ran, 
+                      s5.100k.wlimits_ran, s6.250k.wlimits_ran)
+m2.rse        <- data.frame('Index' = 1)
+Count          = 0
+
+for (i in training_sets){
+  lr = lm(duration ~ ., data = i)
+  lr.summary = summary(lr)
+  rse        = sqrt(sum(lr.summary$residuals^2) / length(lr.summary$residuals))
+  print(paste('RSE', rse))
+  Count = Count + 1
+  m2.rse[Count] <- rse
+  print(paste('Model =>', Count, 'completed'))
+}
 
 
+# Generate Graph of Resuls
+m2.rse_list = c(m2.rse$Index, m2.rse$V2, m2.rse$V3, m2.rse$V4, m2.rse$V5, m2.rse$V6)
 
-
-
-
-
-
-
-# Train Model 5: Backward Selection
-train.control = trainControl(method = 'cv', number = 10)
-
-m5.backward = train(duration ~ ., data = s1.50k.nopp.train, 
-                    method = 'leapBackward',                                 # Step selection
-                    tuneGrid = data.frame(nvmax = 1:7),                      # Number of features to consider in the model
-                    trControl = train.control)                               # Cross Validation technique 
-m5.backward$results
-summary(m5.backward$finalModel)      # An asterisk specifies that the feature was included in the model
-
-
-# Train Model 6:  Forward Selection
-m6.forward = train(duration ~ ., data = s1.50k.nopp.train, 
-                   method = 'leapForward', 
-                   tuneGrid = data.frame(nvmax = 1:7), 
-                   trControl = train.control)
-
-m6.forward$results
-summary(m6.forward$finalModel)     
-
-
-# Train Model 7:  Stepwise Selection Using Processed Data
-train.control = trainControl(method = 'cv', number = 10)
-m7.backward = train(duration ~ ., data = s1.50k.pp.train, 
-                    method = 'leapBackward', 
-                    tuneGrid = data.frame(nvmax = 1:7), 
-                    trControl = train.control)
-m7.backward$results
-summary(m7.backward$finalModel)     
-
-# How can you make a prediction suing train?
-
-
-# Need to try Ridge & Lasso
-
-
-
-
-
-
-
+barplot(m2.rse_list, names.arg = c('s1_50k', 's2_100k', 's3_250k', 's4_50k.wl', 
+                             's5_100k.wl', 's6_250k.wl'), main = 'M2 MLR - ALL DATASETS', 
+        xlab = 'Datasets', ylab = 'RSE')
 
