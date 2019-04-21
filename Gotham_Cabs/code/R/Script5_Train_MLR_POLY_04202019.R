@@ -34,7 +34,7 @@ s6.250k.wlimits_ran    = s6.250k.wlimits[sample(nrow(s6.250k.wlimits)), ]
 # TRAIN / TEST SPLIT______________________________________________________________________
 
 # training split
-train_nrows = (nrow(s1.50k.nolimits_ran)  * .7)
+train_nrows = (nrow(s1.50k.nolimits_ran)  * .7)                          # Caculate num rows for training set. 
 
 # Train
 s1.train = s1.50k.nolimits_ran[1:  (nrow(s1.50k.nolimits_ran)  * .7), ]
@@ -45,7 +45,7 @@ s5.train = s5.100k.wlimits_ran[1:  (nrow(s5.100k.wlimits_ran)  * .7), ]
 s6.train = s6.250k.wlimits_ran[1:  (nrow(s6.250k.wlimits_ran)  * .7), ]
 
 # Test
-s1.test = s1.50k.nolimits_ran[train_nrows:  nrow(s1.50k.nolimits_ran), ]
+s1.test = s1.50k.nolimits_ran[train_nrows:  nrow(s1.50k.nolimits_ran), ] # Index from training to total
 s2.test = s2.100k.nolimits_ran[train_nrows: nrow(s2.100k.nolimits_ran), ]
 s3.test = s3.250k.nolimits_ran[train_nrows: nrow(s3.250k.nolimits_ran), ]
 s4.test = s4.50k.wlimits_ran[train_nrows:   nrow(s4.50k.wlimits_ran), ]
@@ -74,9 +74,12 @@ mlr.poly <- function(data_train, data_test, polynomial, objective) {
 }
 
 
+#mlr.poly(s4.train, s4.test, 4, 'train')
+
+
 for (i in seq(1,4)){
-  rse = mlr.poly(s4.train, s4.test, i, 'train')
-  print(paste('Polynomial =>', i, 'RS2 TRAIN =>', rse))
+  rse = mlr.poly(s4.train, s5.test, i, 'test')
+  print(paste('Polynomial =>', i, 'RSE TEST =>', rse))
 }
 
 
