@@ -51,66 +51,53 @@ s6.test = s6.250k.wlimits_ran[1:  (nrow(s6.250k.wlimits_ran)  * .3), ]
 
 
 
-## M1:    MULTILINEAR REGRESSION_______________________________________________________________________
+## M1:    MULTILINEAR REGRESSION - WITH POLYNOMIALS______________________________________________________
 
 # Train Model
-m3.mlr = lm(duration ~ ., data = s1.50k.nolimits_ran)
-m3.summary = summary(m3.mlr)                                            # return summary
-m3.summary
+m1.mlr.poly = lm(duration ~ poly(pickup_x, pickup_y, dropoff_x, dropoff_y, weekday,hour_, day_,distance,month_, speed , 
+                                 degree = 2, raw = T), data = s6.train)    # Polynomial up to 10
+m1.summary = summary(m1.mlr.poly)
+m1.summary
 
 # Make Prediction
-m3.mlr.predict    = predict(m3.mlr, s1.50k.nolimits_ran)
-m3.mlr.rse         = sqrt(sum((s1.50k.nolimits_ran$duration - m3.mlr.predict)^2) / (nrow(s1.50k.nolimits_ran) -2) )
-m3.mlr.rse         # Residual Standard Error = 285.62
-
+m1.mlr.poly.predict    = predict(m1.mlr.poly, s6.test)
+m1.mlr.poly.rse        = sqrt(sum((s6.test$duration - m1.mlr.poly.predict)^2) / (length(m1.mlr.poly.predict) -2) )
+m1.mlr.poly.rse        # Residual Standard Error = 107.89
 
 
 
 ## M2:    MLR - TEST ALL DATASETS______________________________________________________________________
 
-# Train Model - s1-S6
-training_sets <- list(s1.50k.nolimits_ran, s2.100k.nolimits_ran, s3.250k.nolimits_ran, s4.50k.wlimits_ran, 
-                      s5.100k.wlimits_ran, s6.250k.wlimits_ran)
-m2.results    <- data.frame('Index' = 1)
-Count          = 0
-
-# Get R2:  All Datasets---------------------------------------------------------------------------------
-for (i in training_sets){
-  lr = lm(duration ~ ., data = i)
-  lr.summary = summary(lr)
-  r.squared  = round(lr.summary$r.squared,4)
-  Count = Count + 1
-  m2.results[Count] <- r.squared
-  print(paste('Model =>', Count, 'completed'))
-}
-
-# Write Results To File
-setwd('/home/ccirelli2/Desktop/Repositories/ML_Final_Project_2019/Gotham_Cabs/output')
-write.csv(m2.results, 'm2_mlr_r2_datasets_1to6_04202019.csv')
-print('hello world')
-
-# Generate Graph of Results
-m2.r2 = c(m2.results$Index, m2.results$V2, m2.results$V3, m2.results$V4, m2.results$V5, m2.results$V6)
-barplot(m2.r2, names.arg = c('s1_50k', 's2_100k', 's3_250k', 's4_50k.wl', 
-                             's5_100k.wl', 's6_250k.wl'), main = 'M2 MLR - ALL DATASETS', 
-        xlab = 'Datasets', ylab = 'R2')
-
-
 
 # Get RSE:  All Datasets--------------------------------------------------------------------------------
-training_sets <- list(s1.50k.nolimits_ran, s2.100k.nolimits_ran, s3.250k.nolimits_ran, s4.50k.wlimits_ran, 
-                      s5.100k.wlimits_ran, s6.250k.wlimits_ran)
-m2.rse        <- data.frame('Index' = 1)
-Count          = 0
+training_sets <- list(s1.train, s2.train, s3.train, s4.train, s5.train, s6.train)
+test_sets     <- list(s1.test, s2.test, s3.test, s4.test, s5.test, s6.test)
+m2.rse.train  <- data.frame('Index' = 1)
+m2.rse.test   <- data.frame('Index' = 1)
+
+Count          = 1
 
 for (i in training_sets){
-  lr = lm(duration ~ ., data = i)
-  lr.summary = summary(lr)
-  rse        = sqrt(sum(lr.summary$residuals^2) / length(lr.summary$residuals))
-  print(paste('RSE', rse))
-  Count = Count + 1
-  m2.rse[Count] <- rse
-  print(paste('Model =>', Count, 'completed'))
+  # Train Test Model
+  print(paste('Training Model', Count))
+  m1.mlr.poly         = lm(duration ~ poly(pickup_x, pickup_y, dropoff_x, dropoff_y, weekday,hour_, day_, distance,month_, speed, 
+                           degree = 4, raw = T), data = i) 
+  m1.summary          = summary(m1.mlr.poly)
+  rse.train           = sqrt(sum(m1.summary$residuals^2) / length(m1.summary$residuals))
+  m2.rse.train[Count] = rse.train 
+  print(paste('Generate rse-train for', Count, 'RSE =>', rse.train))
+  
+  for (j in test_sets){  
+    # Generate Prediction
+    print(paste('Generating Prediction for', Count))
+    m1.mlr.poly.predict    = predict(m1.mlr.poly, j)
+    m1.mlr.poly.rse        = sqrt(sum((j$duration - m1.mlr.poly.predict)^2) / (nrow(m1.mlr.poly.predict) -2) )
+    m2.rse.test[Count]     = m1.mlr.poly.rse        
+  
+    # Increment Count & Return Feedback
+    Count = Count + 1
+    print(paste('Model =>', Count, 'completed'))
+    }
 }
 
 
