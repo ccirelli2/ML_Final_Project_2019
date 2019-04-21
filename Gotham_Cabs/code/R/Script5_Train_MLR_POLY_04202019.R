@@ -33,6 +33,9 @@ s6.250k.wlimits_ran    = s6.250k.wlimits[sample(nrow(s6.250k.wlimits)), ]
 
 # TRAIN / TEST SPLIT______________________________________________________________________
 
+# training split
+train_nrows = (nrow(s1.50k.nolimits_ran)  * .7)
+
 # Train
 s1.train = s1.50k.nolimits_ran[1:  (nrow(s1.50k.nolimits_ran)  * .7), ]
 s2.train = s2.100k.nolimits_ran[1: (nrow(s2.100k.nolimits_ran) * .7), ]
@@ -42,68 +45,53 @@ s5.train = s5.100k.wlimits_ran[1:  (nrow(s5.100k.wlimits_ran)  * .7), ]
 s6.train = s6.250k.wlimits_ran[1:  (nrow(s6.250k.wlimits_ran)  * .7), ]
 
 # Test
-s1.test = s1.50k.nolimits_ran[1:  (nrow(s1.50k.nolimits_ran)  * .3), ]
-s2.test = s2.100k.nolimits_ran[1: (nrow(s2.100k.nolimits_ran) * .3), ]
-s3.test = s3.250k.nolimits_ran[1: (nrow(s3.250k.nolimits_ran) * .3), ]
-s4.test = s4.50k.wlimits_ran[1:   (nrow(s4.50k.wlimits_ran)  * .3), ]
-s5.test = s5.100k.wlimits_ran[1:  (nrow(s5.100k.wlimits_ran)  * .3), ]
-s6.test = s6.250k.wlimits_ran[1:  (nrow(s6.250k.wlimits_ran)  * .3), ]
+s1.test = s1.50k.nolimits_ran[train_nrows:  nrow(s1.50k.nolimits_ran), ]
+s2.test = s2.100k.nolimits_ran[train_nrows: nrow(s2.100k.nolimits_ran), ]
+s3.test = s3.250k.nolimits_ran[train_nrows: nrow(s3.250k.nolimits_ran), ]
+s4.test = s4.50k.wlimits_ran[train_nrows:   nrow(s4.50k.wlimits_ran), ]
+s5.test = s5.100k.wlimits_ran[train_nrows:  nrow(s5.100k.wlimits_ran), ]
+s6.test = s6.250k.wlimits_ran[train_nrows:  nrow(s6.250k.wlimits_ran), ]
 
 
 
 ## M1:    MULTILINEAR REGRESSION - WITH POLYNOMIALS______________________________________________________
 
-# Train Model
-m1.mlr.poly = lm(duration ~ poly(pickup_x, pickup_y, dropoff_x, dropoff_y, weekday,hour_, day_,distance,month_, speed , 
-                                 degree = 2, raw = T), data = s6.train)    # Polynomial up to 10
-m1.summary = summary(m1.mlr.poly)
-m1.summary
-
-# Make Prediction
-m1.mlr.poly.predict    = predict(m1.mlr.poly, s6.test)
-m1.mlr.poly.rse        = sqrt(sum((s6.test$duration - m1.mlr.poly.predict)^2) / (length(m1.mlr.poly.predict) -2) )
-m1.mlr.poly.rse        # Residual Standard Error = 107.89
-
-
-
-## M2:    MLR - TEST ALL DATASETS______________________________________________________________________
-
-
-# Get RSE:  All Datasets--------------------------------------------------------------------------------
-training_sets <- list(s1.train, s2.train, s3.train, s4.train, s5.train, s6.train)
-test_sets     <- list(s1.test, s2.test, s3.test, s4.test, s5.test, s6.test)
-m2.rse.train  <- data.frame('Index' = 1)
-m2.rse.test   <- data.frame('Index' = 1)
-
-Count          = 1
-
-for (i in training_sets){
-  # Train Test Model
-  print(paste('Training Model', Count))
-  m1.mlr.poly         = lm(duration ~ poly(pickup_x, pickup_y, dropoff_x, dropoff_y, weekday,hour_, day_, distance,month_, speed, 
-                           degree = 4, raw = T), data = i) 
-  m1.summary          = summary(m1.mlr.poly)
-  rse.train           = sqrt(sum(m1.summary$residuals^2) / length(m1.summary$residuals))
-  m2.rse.train[Count] = rse.train 
-  print(paste('Generate rse-train for', Count, 'RSE =>', rse.train))
-}
-'  
-  for (j in test_sets){  
+mlr.poly <- function(data_train, data_test, polynomial, objective) {
+  # Train Model  
+  m1.mlr.poly = lm(duration ~ poly(pickup_x, pickup_y, dropoff_x, dropoff_y, weekday, hour_, day_, distance, month_, speed, 
+                                   degree = polynomial, raw = T), data = data_train)
+  # Return Summary Stats
+  if (objective == 'train'){
+    m1.summary = summary(m1.mlr.poly)
+    return(m1.summary)
+  }
     # Generate Prediction
-    print(paste('Generating Prediction for', Count))
-    m1.mlr.poly.predict    = predict(m1.mlr.poly, j)
-    m1.mlr.poly.rse        = sqrt(sum((j$duration - m1.mlr.poly.predict)^2) / (nrow(m1.mlr.poly.predict) -2) )
-    m2.rse.test[Count]     = m1.mlr.poly.rse        
-  
-    # Increment Count & Return Feedback
-    Count = Count + 1
-    print(paste('Model =>', Count, 'completed'))
+    if (objective == 'test'){ 
+      m1.mlr.poly.predict    = predict(m1.mlr.poly, data_test)
+      m1.mlr.poly.rse        = sqrt(sum((s4.test$duration - m1.mlr.poly.predict)^2) / (length(m1.mlr.poly.predict) -2))
+      return(m1.mlr.poly.rse)
     }
 }
-'
 
-m2.rse.train
-m2.rse.test
+
+for (i in seq(1,4)){
+  rse = mlr.poly(s4.train, s4.test, i, 'train')
+  print(paste('Polynomial =>', i, 'RS2 TRAIN =>', rse))
+}
+
+
+
+
+
+
+
+## M2:    TEST AGAINST UNKNOWN DATASETS___________________________________________________________________
+
+#mlr.poly(s4.train, s5.test, 4, 'test')
+
+
+
+
 
 # Generate Graph of Resuls
 m2.rse_list = c(m2.rse$Index, m2.rse$V2, m2.rse$V3, m2.rse$V4, m2.rse$V5, m2.rse$V6)
