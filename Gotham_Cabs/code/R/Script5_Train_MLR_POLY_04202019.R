@@ -86,7 +86,8 @@ for (i in training_sets){
   rse.train           = sqrt(sum(m1.summary$residuals^2) / length(m1.summary$residuals))
   m2.rse.train[Count] = rse.train 
   print(paste('Generate rse-train for', Count, 'RSE =>', rse.train))
-  
+}
+'  
   for (j in test_sets){  
     # Generate Prediction
     print(paste('Generating Prediction for', Count))
@@ -99,7 +100,10 @@ for (i in training_sets){
     print(paste('Model =>', Count, 'completed'))
     }
 }
+'
 
+m2.rse.train
+m2.rse.test
 
 # Generate Graph of Resuls
 m2.rse_list = c(m2.rse$Index, m2.rse$V2, m2.rse$V3, m2.rse$V4, m2.rse$V5, m2.rse$V6)
