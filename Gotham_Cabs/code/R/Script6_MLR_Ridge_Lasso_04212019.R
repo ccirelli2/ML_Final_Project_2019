@@ -39,30 +39,6 @@ s4.50k.wlimits_ran     = s4.50k.wlimits[sample(nrow(s4.50k.wlimits)), ]
 s5.100k.wlimits_ran    = s5.100k.wlimits[sample(nrow(s5.100k.wlimits)), ]
 s6.250k.wlimits_ran    = s6.250k.wlimits[sample(nrow(s6.250k.wlimits)), ]
 
-# TRAIN / TEST SPLIT______________________________________________________________________
-
-# Calculate Number of Training Observations
-train_nrows_50k  = (nrow(s1.50k.nolimits)  * .7)
-train_nrows_100k = (nrow(s2.100k.nolimits)   * .7)
-train_nrows_250k = (nrow(s3.250k.nolimits)   * .7)
-
-
-# Train
-s1.train = s1.50k.nolimits_ran[1:  (nrow(s1.50k.nolimits_ran)  * .7), ]
-s2.train = s2.100k.nolimits_ran[1: (nrow(s2.100k.nolimits_ran) * .7), ]
-s3.train = s3.250k.nolimits_ran[1: (nrow(s2.100k.nolimits_ran) * .7), ]
-s4.train = s4.50k.wlimits_ran[1:   (nrow(s4.50k.wlimits_ran)  * .7), ]
-s5.train = s5.100k.wlimits_ran[1:  (nrow(s5.100k.wlimits_ran)  * .7), ]
-s6.train = s6.250k.wlimits_ran[1:  (nrow(s6.250k.wlimits_ran)  * .7), ]
-
-# Test
-s1.test = s1.50k.nolimits_ran[train_nrows_50k:    nrow(s1.50k.nolimits_ran), ] # Index from training to total
-s2.test = s2.100k.nolimits_ran[train_nrows_100k:  nrow(s2.100k.nolimits_ran), ]
-s3.test = s3.250k.nolimits_ran[train_nrows_250k:  nrow(s3.250k.nolimits_ran), ]
-s4.test = s4.50k.wlimits_ran[train_nrows_50k:     nrow(s4.50k.wlimits_ran), ]
-s5.test = s5.100k.wlimits_ran[train_nrows_100k:   nrow(s5.100k.wlimits_ran), ]
-s6.test = s6.250k.wlimits_ran[train_nrows_250k:   nrow(s6.250k.wlimits_ran), ]
-
 
 # M1:   TRAIN MULTILINEAR MODEL___________________________________________________
 m1.mlr = lm(duration ~ ., data = s1.train)
@@ -71,24 +47,71 @@ m1.rse = sqrt((sum(m1.summary$residuals^2)) / nrow(s1.train))
 
 
 
-# M2:   TRAIN MULTILINEAR MODEL - APPLY RIDGE_____________________________________
+# M2:   TRAIN MULTILINEAR MODEL - APPLY RIDGE______________________________________________
 
 # Separate Target & Feature Values
-Y = s1.50k.nolimits_ran$duration
-X = model.matrix(s1.50k.nolimits_ran$duration ~ ., data = s1.50k.nolimits_ran[, 2:11])
+s1_y = s1.50k.nolimits_ran$duration
+s1_x = model.matrix(s1.50k.nolimits_ran$duration ~ ., data = s1.50k.nolimits_ran[, 2:11])
+
+s2_y = s2.100k.nolimits_ran$duration
+s2_x = model.matrix(s2.100k.nolimits_ran$duration ~ ., data = s2.100k.nolimits_ran[, 2:11])
 
 # Generate Grid Possible Values Lambda
 grid = 10^seq(from = 10, to = -2, length = 100)                 #length = desired length of sequence
 
-ridge_cv <- cv.glmnet(X, Y, alpha = 0, lambda = grid,
-                      standardize = TRUE, nfolds = 10)
-plot(ridge_cv, main = "MLR - 10KFOLD USING RIDGE")
 
-# Get CV Lamda
-best_lambda = ridge_cv$lambda.min
-best_lambda
 
-# M3:   FIT FINAL MODEL - BEST LAMBDA_____________________________________________
+# M2:   COMPARE COEFFICIENTS USING DIFFERENT LAMBDAS________________________________________
+m_cv <- glmnet(s1_x, s1_y, alpha = 1, lambda = grid, standardize = TRUE)
+
+# 25th Lambda
+print(paste('25th Lambda =>', m_cv$lambda[25]))           # Value of 25th Lambda
+print((coef(m_cv)[,25]))         # Coefficients derived from 25th Lambda
+
+# 75th Lambda
+print(paste('75th Lambda =>', m_cv$lambda[75]))           # Value of 75th Lambda
+print((coef(m_cv)[,75]))         # Coefficients derived from 75th Lambda
+
+
+
+# M3:   TRAIN OPTIMAL MODEL USING 10KFOLD CROSS VALIDATION__________________________________
+
+
+# Define Function - Train Model------------------------------------------------------------
+
+ridge_cv <- function(X, Y, grid, c_alpha, opt_lambda, c_plot){
+  # Train Cross Validation Model
+  m_cv <- cv.glmnet(X, Y, alpha = c_alpha, lambda = grid, standardize = TRUE, nfolds = 10)
+  # Plot RSE vs Lambda Selection
+  if(c_plot == TRUE){
+    plot(m_cv, main = "MLR - 10KFOLD USING RIDGE")
+  }
+  # Get Best Lambda
+  cv_lambda = m_cv$lambda.min
+  if(opt_lambda == TRUE){
+    print(paste('Optimal lambda =>', round(cv_lambda, 2)))
+  }
+  # Fit Model w/ Best Lambda
+  m_optimal <- glmnet(X, Y, alpha = c_alpha, lambda = cv_lambda, standardize = TRUE)
+  y_hat_cv <- predict(m_optimal, X)
+  model_cv_rse = sqrt(sum((Y - y_hat_cv)^2) / (length(Y) - 2))
+  return(model_cv_rse)
+}
+
+
+# Ridge 
+ridge_model = ridge_cv(s1_x, s1_y, grid, c_alpha = 0, opt_lambda = TRUE, c_plot = FALSE)
+
+# Lasso
+lasso_model = ridge_cv(s1_x, s1_y, grid, c_alpha = 1, opt_lambda = TRUE, c_plot = FALSE)
+
+
+
+
+
+
+
+
 
 
 

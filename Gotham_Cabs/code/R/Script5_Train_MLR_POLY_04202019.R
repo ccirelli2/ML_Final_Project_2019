@@ -67,7 +67,7 @@ mlr.poly <- function(data_train, data_test, polynomial, objective) {
   if (objective == 'train'){
     m1.summary = summary(m1.mlr.poly)
     return(m1.summary)
-  }++
+  }
     # Generate Prediction
     if (objective == 'test'){ 
       m1.mlr.poly.predict    = predict(m1.mlr.poly, data_test)
