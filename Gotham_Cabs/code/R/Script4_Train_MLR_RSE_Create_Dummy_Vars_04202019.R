@@ -67,16 +67,19 @@ s5.100k.wlimits             <- dummy_cols(s5.100k.wlimits)              # Create
 
 # TRAIN / TEST SPLIT______________________________________________________________________
 
-# Train
-s1.train = s1.50k.nolimits[1:  (nrow(s1.50k.nolimits)  * .7), ]
-s2.train = s2.100k.nolimits[1:  (nrow(s2.100k.nolimits)  * .7), ]
-s4.train = s4.50k.wlimits[1:   (nrow(s4.50k.wlimits)  * .7), ]
-s5.train = s5.100k.wlimits[1:   (nrow(s5.100k.wlimits)  * .7), ]
+train_nrows_50k  = (nrow(s1.50k.nolimits)  * .7)
+train_nrows_100k = (nrow(s2.100k.nolimits)   * .7)
+train_nrows_250k = (nrow(s3.250k.nolimits)   * .7)
 
+# Train
+s1.train = s1.50k.nolimits[ 1:   (nrow(s1.50k.nolimits)  * .7), ]
+s2.train = s2.100k.nolimits[1:   (nrow(s2.100k.nolimits)  * .7), ]
+s4.train = s4.50k.wlimits[  1:   (nrow(s4.50k.wlimits)  * .7), ]
+s5.train = s5.100k.wlimits[ 1:   (nrow(s5.100k.wlimits)  * .7), ]
 
 # Test
-s1.test = s1.50k.nolimits[1:  (nrow(s1.50k.nolimits)  * .3), ]
-s4.test = s4.50k.wlimits[1:   (nrow(s4.50k.wlimits)  * .3), ]
+s1.test = s1.50k.nolimits[  train_nrows_50k:  length(s1.50k.nolimits), ]
+s4.test = s4.50k.wlimits[   train_nrows_50k:  length(s4.50k.wlimits),  ]
 
 
 ## M1:    MULTILINEAR REGRESSION_______________________________________________________________________
@@ -98,7 +101,7 @@ m3.mlr.rse         # Residual Standard Error = 285.62
 ## M2:    MLR - TEST ALL DATASETS______________________________________________________________________
 
 # Train Model - s1 & s4
-training_sets <- list(s1.50k.nolimits, s2.100k.nolimits, s4.50k.wlimits, s5.100k.wlimits)
+training_sets <- list(s1.50k.nolimits, s4.50k.wlimits)
 m2.results    <- data.frame('Index' = 1)
 Count          = 0
 

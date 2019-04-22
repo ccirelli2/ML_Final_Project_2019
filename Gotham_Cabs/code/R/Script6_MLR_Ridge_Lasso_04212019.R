@@ -1,7 +1,11 @@
-## REFERENCES_____________________________________________________________________________
-'MLR Output:      https://www.graphpad.com/support/faq/standard-deviation-of-the-residuals-syx-rmse-rsdr/
-                  http://www.sthda.com/english/articles/38-regression-model-validation/158-regression-model-accuracy-metrics-r-square-aic-bic-cp-and-more/
+# MLR - APPLY RIDGE & LASSO
+
+## DOCUMENTATION__________________________________________________________________________
 '
+1.) Should we regularize our target?
+    https://www.datacamp.com/community/tutorials/tutorial-ridge-lasso-elastic-net
+'
+
 
 ## CLEAR NAMESPACE________________________________________________________________________
 rm(list = ls()) 
@@ -10,6 +14,10 @@ rm(list = ls())
 library(lattice)
 library(ggplot2)
 library(caret)  # used for parameter tuning
+library(glmnet)
+library(pls)
+library(ISLR)
+
 
 ## CREATE DATASET_________________________________________________________________________
 setwd('/home/ccirelli2/Desktop/Repositories/ML_Final_Project_2019/Gotham_Cabs/data')
@@ -56,62 +64,45 @@ s5.test = s5.100k.wlimits_ran[train_nrows_100k:   nrow(s5.100k.wlimits_ran), ]
 s6.test = s6.250k.wlimits_ran[train_nrows_250k:   nrow(s6.250k.wlimits_ran), ]
 
 
-
-## M1:    MULTILINEAR REGRESSION - WITH POLYNOMIALS______________________________________________________
-
-mlr.poly <- function(data_train, data_test, polynomial, objective) {
-  # Train Model  
-  m1.mlr.poly = lm(duration ~ poly(pickup_x, pickup_y, dropoff_x, dropoff_y, weekday, hour_, day_, distance, month_, speed, 
-                                   degree = polynomial, raw = T), data = data_train)
-  # Return Summary Stats
-  if (objective == 'train'){
-    m1.summary = summary(m1.mlr.poly)
-    return(m1.summary)
-  }++
-    # Generate Prediction
-    if (objective == 'test'){ 
-      m1.mlr.poly.predict    = predict(m1.mlr.poly, data_test)
-      m1.mlr.poly.rse        = sqrt(sum((s4.test$duration - m1.mlr.poly.predict)^2) / (length(m1.mlr.poly.predict) -2))
-      return(m1.mlr.poly.rse)
-    }
-}
+# M1:   TRAIN MULTILINEAR MODEL___________________________________________________
+m1.mlr = lm(duration ~ ., data = s1.train)
+m1.summary = summary(m1.mlr)
+m1.rse = sqrt((sum(m1.summary$residuals^2)) / nrow(s1.train))
 
 
-#mlr.poly(s4.train, s4.test, 4, 'train')
+
+# M2:   TRAIN MULTILINEAR MODEL - APPLY RIDGE_____________________________________
+
+# Separate Target & Feature Values
+Y = s1.50k.nolimits_ran$duration
+X = model.matrix(s1.50k.nolimits_ran$duration ~ ., data = s1.50k.nolimits_ran[, 2:11])
+
+# Generate Grid Possible Values Lambda
+grid = 10^seq(from = 10, to = -2, length = 100)                 #length = desired length of sequence
+
+ridge_cv <- cv.glmnet(X, Y, alpha = 0, lambda = grid,
+                      standardize = TRUE, nfolds = 10)
+plot(ridge_cv, main = "MLR - 10KFOLD USING RIDGE")
+
+# Get CV Lamda
+best_lambda = ridge_cv$lambda.min
+best_lambda
+
+# M3:   FIT FINAL MODEL - BEST LAMBDA_____________________________________________
 
 
-for (i in seq(1,4)){
-  rse = mlr.poly(s4.train, s5.test, i, 'test')
-  print(paste('Polynomial =>', i, 'RSE TEST =>', rse))
-}
 
 
-# Aggregate Results - Create Graph
-'Below results were typed out using the above functions'
-num_poly     = c(1,2,3,4)
-d1_rse_train = c(280, 196, 149, 113)
-d1_rse_test  = c(737, 766, 801, 3438)
-d2_rse_train = c(246, 153, 106, 81)
-d2_rse_test  = c(247, 156, 262, 706)
-d3_rse_test  = c(733, 781, 19394, 1779816)
 
-# Dataset 1
-d1_results <- matrix(c(280, 196, 149, 113, 737, 766, 801, 3438), ncol=2, byrow = TRUE)
-colnames(d1_results) = c('d1_train', 'd1_test')
-rownames(d1_results) = c('p1', 'p2', 'p3', 'p4')
-d1_plot = barplot(d1_results, beside = T, legend = rownames(training_results), panel.first = grid(),
-                  main = 'MLR RESULTS - POLYNOMIALS 1-4', 
-                  ylab = 'TRAIN - RSE', 
-                  xlab = 'DATASETS')
 
-# Dataset 2
-d2_results <- matrix(c(246, 153, 106, 81, 733, 781, 1500, 2000), ncol = 2, byrow = TRUE)
-colnames(d2_results) = c('d2_train', 'd2_test')
-rownames(d2_results) = c('p1', 'p2', 'p3', 'p4')
-d2_plot = barplot(d2_results, beside = T, legend = rownames(d2_results), panel.first = grid(),
-                  main = 'MLR RESULTS - POLYNOMIALS 1-4', 
-                  ylab = 'TRAIN - RSE', 
-                  xlab = 'DATASETS')
+
+
+
+
+
+
+
+
 
 
 
