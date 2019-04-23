@@ -67,7 +67,8 @@ m1.mlr = lm(duration ~ ., data = s1.train)
 m1.summary = summary(m1.mlr)
 m1.rse = sqrt((sum(m1.summary$residuals^2)) / nrow(s1.train))
 m1.summary
-
+m1.sqrt.sq.coeff = sum(sqrt(m1.summary$coefficients[,1]^2))                   # square coefficients, take square root and then sum. 
+m1.sqrt.sq.coeff                                                              # Compare to coeffs from Ridge & Lasso
 
 
 # M2:   TRAIN MULTILINEAR MODEL - APPLY RIDGE______________________________________________
@@ -89,15 +90,45 @@ s4_x = as.matrix(s5.train[,2:11])
 grid = 10^seq(from = 10, to = -2, length = 100)                 #length = desired length of sequence
 
 # Train MLR Using All Lambdas Grid 
-m_cv <- glmnet(s3_x, s3_y, alpha = 0, lambda = grid, standardize = TRUE)
+m2.ridge <- glmnet(s1_x, s1_y, alpha = 0, lambda = grid, standardize = TRUE)
 
 # 25th Lambda
-print(paste('25th Lambda =>', m_cv$lambda[25]))           # Value of 25th Lambda
-print((coef(m_cv)[,25]))         # Coefficients derived from 25th Lambda
+print(paste('25th Lambda =>', m2.ridge$lambda[25]))           # Value of 25th Lambda
+print((coef(m2.ridge)[,25]))         # Coefficients derived from 25th Lambda
+m2.coeff_25th = coef(m2.ridge)[,25]
+m2.sqrt.sq.coeff.25th = sum(sqrt(m2.coeff_25th^2))
+m2.sqrt.sq.coeff
 
 # 75th Lambda
-print(paste('75th Lambda =>', m_cv$lambda[75]))           # Value of 75th Lambda
+print(paste('75th Lambda =>', m_cv$lambda[50]))           # Value of 75th Lambda
 print((coef(m_cv)[,75]))         # Coefficients derived from 75th Lambda
+m2.coeff_75th = coef(m2.ridge)[,50]
+m2.sqrt.sq.coeff.75th = sum(sqrt(m2.coeff_75th^2))
+m2.sqrt.sq.coeff.75th                                       # Compare to show how coefficients are approaching zero.
+
+
+# M3:   TRAIN MULTILINEAR MODEL - INSPECT COEFFICEINTS FOR LASSO______________________________
+
+# Train MLR Using All Lambdas Grid 
+m3.lasso <- glmnet(s1_x, s1_y, alpha = 1, lambda = grid, standardize = TRUE)
+
+# 25th Lambda
+print(paste('25th Lambda =>', m3.lasso$lambda[25]))           # Value of 25th Lambda
+print((coef(m3.lasso)[,25]))                                  # Odd, all coefficeints are zero
+m3.coeff_25th = coef(m3.lasso)[,25]
+m3.sqrt.sq.coeff.25th = sum(sqrt(m3.coeff_25th^2))
+m3.sqrt.sq.coeff.25th
+
+# 75th Lambda
+print(paste('50th Lambda =>', m_cv$lambda[50]))           # Value of 75th Lambda
+print((coef(m3.lasso)[,50]))         # Coefficients derived from 75th Lambda
+m3.coeff_50th = coef(m3.lasso)[,50]
+m3.sqrt.sq.coeff.50th = sum(sqrt(m3.coeff_50th^2))
+m3.sqrt.sq.coeff.50th
+
+
+
+# M4:   FIND OPTIMAL LAMBDAS FOR RIDGE & LASSO________________________________________________
 
 # Define Function - Train Model------------------------------------------------------------
 
@@ -128,7 +159,7 @@ ridge_model = ridge_cv(s4_x, s4_y, grid, c_alpha = 0, opt_lambda = TRUE, c_plot 
 ridge_model
 
 
-# Lasso
+  # Lasso
 lasso_model = ridge_cv(s4_x, s4_y, grid, c_alpha = 1, opt_lambda = TRUE, c_plot = FALSE)
 lasso_model
 
@@ -139,9 +170,9 @@ model.name = list('m1.mlr.s1', 'm2.ridge.s1.50k.nl', 'm3.ridge.s2.50k.wl', 'm4.r
 model.rse = c(280.2, 280.1613, 246.52, 241.053, 280.1571, 246.52, 241.053)
 
 
-barplot(model.rse,  names.arg = model.name)
-
-?barplot
+barplot(model.rse,  names.arg = model.name, cex.names = .75, las = 2, 
+        main = "Comparison Ridge & Lasso RSE", 
+        ylab = 'RSE')
 
 
 
