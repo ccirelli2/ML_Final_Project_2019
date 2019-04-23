@@ -40,15 +40,6 @@ s6.250k.wlimits_ran    = s6.250k.wlimits[sample(nrow(s6.250k.wlimits)), ]
 # Create Training Method - CV & 10kfold
 train.control = trainControl(method = 'cv', number = 10)
 
-# Train Model 
-m1.backward = train(duration ~ ., data = s1.50k.nolimits_ran, 
-                    method = 'leapBackward',                                 # Step selection
-                    tuneGrid = data.frame(nvmax = 1:11),                     # Number of features to consider in the model
-                    trControl = train.control)                               # Cross Validation technique 
-m1.backward$results
-summary(m1.backward$finalModel)      # An asterisk specifies that the feature was included in the model
-
-
 model_opt <- function(dataset, opt_method, num_param, cv_grid, result2return){
   'opt_method:        either leapBackward or leapForward
    results:           A dataframe with the training error rate and values for the tuning params
@@ -66,7 +57,7 @@ model_opt <- function(dataset, opt_method, num_param, cv_grid, result2return){
     
     # Final Model - # An asterisk specifies that the feature was included in the model
     else if (result2return == 'finalModel'){
-      print(paste('Final Model:',summary(m0$finalModel)))
+      print(summary(m0$finalModel))
       return(summary(m1.backward$finalModel))}      
     
     else if (result2return == 'bestTune'){
@@ -75,7 +66,19 @@ model_opt <- function(dataset, opt_method, num_param, cv_grid, result2return){
 }
 
 
-model_opt(s1.50k.nolimits_ran, 'leapBackward', 11, train.control, 'results')
+m0.output = model_opt(s6.250k.wlimits_ran, 'leapBackward', 11, train.control, 'results')
+
+
+param_index = seq(from = 1, to = 11, by = 1)
+m0.output$RMSE
+
+plot(m0.output$RMSE, type = 'o', names.arg = param_index, main = 'FORKWARD SELECTION - RMSE FOR NUM OF PARAMETERS', 
+        xlab = 'Number of Parameters', ylab = 'RMSE')
+
+
+
+
+
 
 
 # Train Model 6:  Forward Selection
