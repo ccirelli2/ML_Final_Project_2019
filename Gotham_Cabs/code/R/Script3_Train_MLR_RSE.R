@@ -73,9 +73,9 @@ m3.mlr.rse         # Residual Standard Error = 285.62
   ## M2:    MLR - TEST ALL DATASETS______________________________________________________________________
 
 # Training Sets
-training_sets <- list(s1.train, s2.train, s3.train, s4.train, s5.train, s6.train)
-test_sets     <- list(s1.test, s2.test, s3.test, s4.test, s5.test, s6.test)
-test_set_names = c('50knl', '100knl', '250knl', '50kwl','100kwl', '$250kwl')
+training_sets <- list(s1.train, s2.train, s3.train, s5.train, s6.train)
+test_sets     <- list(s1.test, s2.test, s3.test, s5.test, s6.test)
+test_set_names = c('50knl', '100knl', '250knl', '50kwl', '100kwl', '$250kwl')
 m2.results    <- data.frame('Index' = 1)
 
 
@@ -104,7 +104,7 @@ for (i in seq(1, length(training_sets))){
   index_count = index_count + 1
 }
 
-
+print('hello world')
 # Create DataFrame
 df = data.frame(row.names = index.rse)
 df$index.rse = index.rse
@@ -117,6 +117,6 @@ barplot(df$train.rse, main = 'MLR - ALL DATASETS - TEST RSE', xlab = 'Datasets',
 
 
 ggplot(df, aes(y = df$test.rse, x = test_set_names, fill = test_set_names)) + geom_bar(stat = 'identity') + 
-       ggtitle('Multilinear Regression - Test RSE Over 6 Datasets') + 
+       ggtitle('Multilinear Regression - RSE Over 6 Datasets') + 
         scale_y_continuous(breaks = pretty(df$test.rse, n = 5))
 

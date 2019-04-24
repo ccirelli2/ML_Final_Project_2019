@@ -99,6 +99,7 @@ m1.rse
 # GET RSE ALL DATASETS
 training_sets <- list(s1.train, s2.train, s3.train, s4.train, s5.train, s6.train)
 test_sets     <- list(s1.test, s2.test, s3.test, s4.test, s5.test, s6.test)
+test_set_names = c('50knl', '100knl', '250knl', '50kwl','100kwl', '$250kwl')
 
 index.rse = c()
 list.train.rse = c()
@@ -132,19 +133,14 @@ df$index.rse = index.rse
 df$train.rse = list.train.rse
 df$test.rse = list.test.rse
 
-
 # Generate a Plot for Train & Test Points
-barplot(data = df, height = df$test.rse, main = 'Simple Linear Reggresion - Compare Datasets', 
-        legend = test_sets, beside = TRUE, col = 'darkblue', 
-        xlab = 'Datasets', ylab = 'RSE')
- 
 
-
+ggplot(df, aes(y = df$test.rse, x = test_set_names, fill = test_set_names)) + geom_bar(stat = 'identity') + 
+  ggtitle('Simple Linear Regression - Test RSE Over 6 Datasets') + 
+  scale_y_continuous(breaks = pretty(df$test.rse, n = 5))
 
 
 df
-
-
 
 
 

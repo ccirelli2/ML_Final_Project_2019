@@ -47,64 +47,66 @@ train_nrows_250k = (nrow(s3.250k.nolimits)   * .7)
 # Train
 s1.train = s1.50k.nolimits_ran[1:  (nrow(s1.50k.nolimits_ran)  * .7), ]
 s2.train = s2.100k.nolimits_ran[1: (nrow(s2.100k.nolimits_ran) * .7), ]
-s3.train = s3.250k.nolimits_ran[1: (nrow(s2.100k.nolimits_ran) * .7), ]
+s3.train = s3.250k.nolimits_ran[1: (nrow(s3.250k.nolimits_ran) * .7), ]
 s4.train = s4.50k.wlimits_ran[1:   (nrow(s4.50k.wlimits_ran)  * .7), ]
 s5.train = s5.100k.wlimits_ran[1:  (nrow(s5.100k.wlimits_ran)  * .7), ]
 s6.train = s6.250k.wlimits_ran[1:  (nrow(s6.250k.wlimits_ran)  * .7), ]
 
 # Test
-s1.test = s1.50k.nolimits_ran[train_nrows_50k:    nrow(s1.50k.nolimits_ran), ] # Index from training to total
+s1.test = s1.50k.nolimits_ran[ train_nrows_50k:   nrow(s1.50k.nolimits_ran), ] # Index from training to total
 s2.test = s2.100k.nolimits_ran[train_nrows_100k:  nrow(s2.100k.nolimits_ran), ]
 s3.test = s3.250k.nolimits_ran[train_nrows_250k:  nrow(s3.250k.nolimits_ran), ]
-s4.test = s4.50k.wlimits_ran[train_nrows_50k:     nrow(s4.50k.wlimits_ran), ]
-s5.test = s5.100k.wlimits_ran[train_nrows_100k:   nrow(s5.100k.wlimits_ran), ]
-s6.test = s6.250k.wlimits_ran[train_nrows_250k:   nrow(s6.250k.wlimits_ran), ]
+s4.test = s4.50k.wlimits_ran[  train_nrows_50k:   nrow(s4.50k.wlimits_ran), ]
+s5.test = s5.100k.wlimits_ran[ train_nrows_100k:  nrow(s5.100k.wlimits_ran), ]
+s6.test = s6.250k.wlimits_ran[ train_nrows_250k:  nrow(s6.250k.wlimits_ran), ]
 
-
-
-# M1:   TRAIN MULTILINEAR MODEL___________________________________________________
-m1.mlr = lm(duration ~ ., data = s1.train)
-m1.summary = summary(m1.mlr)
-m1.rse = sqrt((sum(m1.summary$residuals^2)) / nrow(s1.train))
-m1.summary
-m1.sqrt.sq.coeff = sum(sqrt(m1.summary$coefficients[,1]^2))                   # square coefficients, take square root and then sum. 
-m1.sqrt.sq.coeff                                                              # Compare to coeffs from Ridge & Lasso
-
-
-# M2:   TRAIN MULTILINEAR MODEL - APPLY RIDGE______________________________________________
 
 # Separate Target & Feature Values
 s1_y = s1.train$duration
 s1_x = as.matrix(s1.train[,2:11])
 
-s2_y = s4.train$duration
-s2_x = as.matrix(s4.train[,2:11])
+s2_y = s2.train$duration
+s2_x = as.matrix(s2.train[,2:11])
 
-s3_y = s2.train$duration
-s3_x = as.matrix(s2.train[,2:11])
+s3_y = s3.train$duration
+s3_x = as.matrix(s3.train[,2:11])
 
-s4_y = s5.train$duration
-s4_x = as.matrix(s5.train[,2:11])
+s4_y = s4.train$duration
+s4_x = as.matrix(s4.train[,2:11])
+
+s5_y = s5.train$duration
+s5_x = as.matrix(s5.train[,2:11])
+
+s6_y = s6.train$duration
+s6_x = as.matrix(s6.train[,2:11])
 
 # Generate Grid Possible Values Lambda
 grid = 10^seq(from = 10, to = -2, length = 100)                 #length = desired length of sequence
 
-# Train MLR Using All Lambdas Grid 
-m2.ridge <- glmnet(s1_x, s1_y, alpha = 0, lambda = grid, standardize = TRUE)
 
-# 25th Lambda
-print(paste('25th Lambda =>', m2.ridge$lambda[25]))           # Value of 25th Lambda
-print((coef(m2.ridge)[,25]))         # Coefficients derived from 25th Lambda
-m2.coeff_25th = coef(m2.ridge)[,25]
-m2.sqrt.sq.coeff.25th = sum(sqrt(m2.coeff_25th^2))
-m2.sqrt.sq.coeff
+# M1:   TRAIN RIDGE & LASSO MODELS - COMPARE LAMBDAS__________________________________________
 
-# 75th Lambda
-print(paste('75th Lambda =>', m_cv$lambda[50]))           # Value of 75th Lambda
-print((coef(m_cv)[,75]))         # Coefficients derived from 75th Lambda
-m2.coeff_75th = coef(m2.ridge)[,50]
-m2.sqrt.sq.coeff.75th = sum(sqrt(m2.coeff_75th^2))
-m2.sqrt.sq.coeff.75th                                       # Compare to show how coefficients are approaching zero.
+# Train Model 
+m1.ridge <- glmnet(s1_x, s1_y, alpha = 0, lambda = grid, standardize = TRUE)
+
+# Create List to Capture Sum of Coefficients
+list_sum_ceoffs <- c()
+df = data.frame(row.names = grid)
+
+
+# Compare Value of Coefficients 
+for (i in seq(1,length(m1.ridge$lambda))){
+  sum_coeff = sum((sqrt(coef(m1.ridge)[,i]^2)))
+  list_sum_ceoffs[i] = sum_coeff
+}
+
+# Plot Sum of Squared Coefficients For Each Value of Lambda
+df$sumcoeff = list_sum_ceoffs
+ggplot(data = df, aes(x = seq(1,100), y = df$sumcoeff)) + geom_line() + ggtitle('Ridge - Sum of Squared Coefficeints For Each Lambda')
+
+
+
+
 
 
 # M3:   TRAIN MULTILINEAR MODEL - INSPECT COEFFICEINTS FOR LASSO______________________________
