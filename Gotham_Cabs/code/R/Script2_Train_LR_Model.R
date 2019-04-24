@@ -81,7 +81,7 @@ s6.test = s6.250k.wlimits_ran[train_nrows:  nrow(s6.250k.wlimits_ran), ]
 
 
 ## M1:   Duration vs Distance_______________________________________________________________________________________
-m1.lr            = lm(duration ~ distance, data = s1.train)
+m1.lr            = lm(duration ~ distance, data = s6.train)
 m1.summary       = summary(m1.lr)
 m1.summary
 m1.train.r2      = m1.summary$r.squared
@@ -89,36 +89,65 @@ m1.train.ss      = sum(m1.summary$residuals^2)
 m1.train.mse     = mean(m1.summary$residuals^2) 
 
 # M1 Prediction
-m1.lr.predict    = predict(m1.lr, s1.test)
-m1.ss            = sum((s1.test$duration - m1.lr.predict)^2) # Calculate Square Root of Residual Sum of Squared Errors. 
-m1.mse           = mean((s1.test$duration - m1.lr.predict)^2)
+m1.lr.predict    = predict(m1.lr, s6.test)
+m1.rse           = sqrt(sum((s6.test$duration - m1.lr.predict)^2) / (length(ml.predict) -2))
+
+m1.rse
 
 
 # GET RSE ALL DATASETS
 training_sets <- list(s1.train, s2.train, s3.train, s4.train, s5.train, s6.train)
-set.names     <- c('s1_50k', 's2_100k', 's3_250k', 
-                   's4_50k.wl', 's5_100k.wl', 's6_250k.wl')
-m1.rse        <- data.frame('Index' = 1)
-Count          = 0
+test_sets     <- list(s1.test, s2.test, s3.test, s4.test, s5.test, s6.test)
 
-for (i in training_sets){
-  lr         = lm(duration ~ distance, data = i)
-  lr.summary = summary(lr)
-  rse        = sqrt(sum(lr.summary$residuals^2) / length(lr.summary$residuals)) 
-  Count = Count + 1
-  m1.rse[Count] <- rse
-  print(paste('Model =>', Count, 'completed'))
+index.rse = c()
+list.train.rse = c()
+list.test.rse  = c()
+index_count = 1
+
+
+for (i in seq(1, length(training_sets))){
+  # Start Index 
+  index.rse[index_count] = i
+  print(paste('training model for dataset =>', i))
+  # Create Dataset Objects
+  data_train <- training_sets[[i]]
+  data_test  <- test_sets[[i]]
+  # Train LR Model
+  ml.train = lm(duration ~ distance, data = data_train)
+  ml.train.summary = summary(ml.train)
+  list.train.rse[index_count] = sqrt(sum(ml.train.summary$residuals^2) / length(ml.train.summary$residuals))  
+  # Generate A Prediction & Calculate RSE
+  print(paste('creating test results for dataset =>', i))
+  ml.predict = predict(ml.train, data_test)
+  list.test.rse[index_count] = sqrt(sum((data_test$duration - ml.predict)^2) / (length(ml.predict) -2))
+  index_count = index_count + 1
 }
 
-# Write Results To File
-setwd('/home/ccirelli2/Desktop/Repositories/ML_Final_Project_2019/Gotham_Cabs/output')
-write.csv(m1.results, 'm1_lr_r2_datasets_1to6_04202019.csv')
+print('hello world')
 
-# Generate Graph of Resuls
-m1.rse_list = c(m1.rse$Index, m1.rse$V2, m1.rse$V3, m1.rse$V4, m1.rse$V5, m1.rse$V6)
-barplot(m1.rse_list, names.arg = c('s1_50k', 's2_100k', 's3_250k', 's4_50k.wl', 
-                             's5_100k.wl', 's6_250k.wl'), main = 'M1 LR - ALL DATASETS', 
-        xlab = 'Datasets', ylab = 'RSE')
+# Create DataFrame
+df = data.frame(row.names = index.rse)
+df$index.rse = index.rse
+df$train.rse = list.train.rse
+df$test.rse = list.test.rse
+
+
+# Generate a Plot for Train & Test Points
+p = ggplot() + 
+  geom_line(data = df, aes(x = df$index.rse, y = df$train.rse, color = 'Train RSE')) +
+  geom_line(data = df, aes(x = df$index.rse, y = df$test.rse, color = 'Test RSE')) +
+  xlab('Data Set NUmber') + 
+  ylab('RSE') 
+
+print(p+ ggtitle('SIMPLE LR - DURATION ~ DISTANCE - PLOT TEST VS TRAINING RSE'))
+
+
+
+
+
+
+
+
 
 
 

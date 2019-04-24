@@ -73,6 +73,51 @@ s4.50k.wlimits_ran     = s4.50k.wlimits[sample(nrow(s4.50k.wlimits)), ]
 s5.100k.wlimits_ran    = s5.100k.wlimits[sample(nrow(s5.100k.wlimits)), ]
 s6.250k.wlimits_ran    = s6.250k.wlimits[sample(nrow(s6.250k.wlimits)), ]
 
+# CREATE DUMMY VARIABLES__________________________________________________________________
+
+## S1 - Factor
+s1.50k.nolimits$pickup_x    <- factor(s1.50k.nolimits$pickup_x)
+s1.50k.nolimits$pickup_y    <- factor(s1.50k.nolimits$pickup_y)
+s1.50k.nolimits$dropoff_x   <- factor(s1.50k.nolimits$dropoff_x)
+s1.50k.nolimits$dropoff_y   <- factor(s1.50k.nolimits$dropoff_y)
+s1.50k.nolimits$weekday     <- factor(s1.50k.nolimits$weekday)
+s1.50k.nolimits$hour_       <- factor(s1.50k.nolimits$hour_)
+s1.50k.nolimits$day_        <- factor(s1.50k.nolimits$day_)
+s1.50k.nolimits$month_      <- factor(s1.50k.nolimits$month_)
+s1.50k.nolimits             <- dummy_cols(s1.50k.nolimits)              # Create Dummy Columns
+
+s2.100k.nolimits$pickup_x    <- factor(s2.100k.nolimits$pickup_x)
+s2.100k.nolimits$pickup_y    <- factor(s2.100k.nolimits$pickup_y)
+s2.100k.nolimits$dropoff_x   <- factor(s2.100k.nolimits$dropoff_x)
+s2.100k.nolimits$dropoff_y   <- factor(s2.100k.nolimits$dropoff_y)
+s2.100k.nolimits$weekday     <- factor(s2.100k.nolimits$weekday)
+s2.100k.nolimits$hour_       <- factor(s2.100k.nolimits$hour_)
+s2.100k.nolimits$day_        <- factor(s2.100k.nolimits$day_)
+s2.100k.nolimits$month_      <- factor(s2.100k.nolimits$month_)
+s2.100k.nolimits             <- dummy_cols(s2.100k.nolimits)              # Create Dummy Columns
+
+s4.50k.wlimits$pickup_x     <- factor(s4.50k.wlimits$pickup_x)
+s4.50k.wlimits$pickup_y     <- factor(s4.50k.wlimits$pickup_y)
+s4.50k.wlimits$dropoff_x    <- factor(s4.50k.wlimits$dropoff_x)
+s4.50k.wlimits$dropoff_y    <- factor(s4.50k.wlimits$dropoff_y)
+s4.50k.wlimits$weekday      <- factor(s4.50k.wlimits$weekday)
+s4.50k.wlimits$hour_        <- factor(s4.50k.wlimits$hour_)
+s4.50k.wlimits$day_         <- factor(s4.50k.wlimits$day_)
+s4.50k.wlimits$month_       <- factor(s4.50k.wlimits$month_)
+s4.50k.wlimits              <- dummy_cols(s4.50k.wlimits)               # Create Dummy Columns
+
+s5.100k.wlimits$pickup_x    <- factor(s5.100k.wlimits$pickup_x)
+s5.100k.wlimits$pickup_y    <- factor(s5.100k.wlimits$pickup_y)
+s5.100k.wlimits$dropoff_x   <- factor(s5.100k.wlimits$dropoff_x)
+s5.100k.wlimits$dropoff_y   <- factor(s5.100k.wlimits$dropoff_y)
+s5.100k.wlimits$weekday     <- factor(s5.100k.wlimits$weekday)
+s5.100k.wlimits$hour_       <- factor(s5.100k.wlimits$hour_)
+s5.100k.wlimits$day_        <- factor(s5.100k.wlimits$day_)
+s5.100k.wlimits$month_      <- factor(s5.100k.wlimits$month_)
+s5.100k.wlimits             <- dummy_cols(s5.100k.wlimits)              # Create Dummy Columns
+
+
+
 # TRAIN / TEST SPLIT______________________________________________________________________
 
 # Calculate Number of Training Observations
@@ -96,71 +141,15 @@ s4.test = s4.50k.wlimits_ran[train_nrows_50k:     nrow(s4.50k.wlimits_ran), ]
 s5.test = s5.100k.wlimits_ran[train_nrows_100k:   nrow(s5.100k.wlimits_ran), ]
 s6.test = s6.250k.wlimits_ran[train_nrows_250k:   nrow(s6.250k.wlimits_ran), ]
 
-
-
-
 # M1    MULTILINEAR REGRESSION_________________________________________
 '1.) Use Data w/ Limits
  2.) Use Polynomial of 1-2
  3.) Try backward & forward selection
  4.) Finalize with K-fold. 
 '
-?trainControl()
-# POLYNOMIAL FUNCTION---------------------------------------------------------------
 
 # Create Training Method - Method = Cross Validation, Folds = 10
 train.control = trainControl(method = 'cv', number = 10)
-
-mlr.poly <- function(dataset, npoly, num_param, train_control, opt_method, result2return) {
-  '**Model Method      CV w/ 10 folds, find the best feature selection w/ polynomials
-   dataset             Dataset on which we will train our model. 
-   num_polynomials     The polynomial degree up to which (1-n) we should train our model. 
-   num_param           The number of parameters to include in the stepwise selection
-   opt_method          Either leapBackward or leapForward
-   train_control       cv = Cross Validation, number = number of folds and iterations
-   results             Dataframe with the training error rate and values for the tuning params
-   bestTune            Dataframe with the final parameters
-   finalModel          Fit object using the best parameters
-   '
-  # Model Setup 
-  'Regress duration on all features w/ n degree of polynomials'
-  
-  m0 = train(duration ~ pickup_x, pickup_y, dropoff_x, dropoff_y, weekday, hour_, day_, month_, distance^npoly, speed^npoly, # npoly is an input 
-             data      = dataset, 
-             method    = opt_method,                                   # Step selection
-             tuneGrid  = data.frame(nvmax = 1 : num_param),            # Number of features to consider in the model
-             trControl = train_control)
-
-  # Results
-  if (result2return == 'results'){
-    print(paste('Results:',m0$results))
-    return(m0$results)}
-  # Final Model - # An asterisk specifies that the feature was included in the model
-  else if (result2return == 'finalModel'){
-    print(summary(m0$finalModel))
-    return(summary(m1.backward$finalModel))}      
-  # Get Model w / Best Num Parameters
-  else if (result2return == 'bestTune'){
-    print(paste('Best Tune:', m0$bestTune))
-    return(m0$bestTune)}
-}
-
-
-# Run Function 
-'1.) Iterate over a sequency of 1 - n values that represent our range of polynomials. 
- 2.) Return either results, bestTune or finalModel
-'
-
-for (i in seq(1,2)){
-  rse = mlr.poly(dataset = s4.50k.wlimits_ran, num_polynomials = i, num_param = 3, train_control = train.control, 
-                 opt_method = 'leapForward', result2return = 'results')
-  print(paste('Polynomial =>', i, 'RSE TEST =>', rse))
-}
-
-
-
-
-
 
 
 
