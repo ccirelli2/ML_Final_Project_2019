@@ -23,6 +23,22 @@
                       Should we apply this at the end after training our models?'
       
 
+'THOUGHTS
+
+1.) Maybe try using train() to add the polynomial functions. 
+2.) Create dummy factors and only add polynomial ^2 to the continous features.  Then just create lists of features to add to the model
+    via forward propogation to see how the model RSE changes. 
+    - Pro:  only apply polynomial to continuous features. 
+            can use stepwise selection
+            can use dummy variables
+   - Cons:  Cant use CV. 
+'
+
+
+
+
+
+
 
 ## CLEAR NAMESPACE________________________________________________________________________
 rm(list = ls()) 
@@ -95,7 +111,7 @@ s6.test = s6.250k.wlimits_ran[train_nrows_250k:   nrow(s6.250k.wlimits_ran), ]
 # Create Training Method - Method = Cross Validation, Folds = 10
 train.control = trainControl(method = 'cv', number = 10)
 
-mlr.poly <- function(dataset, num_polynomials, num_param, train_control, opt_method, result2return) {
+mlr.poly <- function(dataset, npoly, num_param, train_control, opt_method, result2return) {
   '**Model Method      CV w/ 10 folds, find the best feature selection w/ polynomials
    dataset             Dataset on which we will train our model. 
    num_polynomials     The polynomial degree up to which (1-n) we should train our model. 
@@ -109,21 +125,12 @@ mlr.poly <- function(dataset, num_polynomials, num_param, train_control, opt_met
   # Model Setup 
   'Regress duration on all features w/ n degree of polynomials'
   
-  f <- bquote(duration ~ poly(duration, .(i)))
-  
-  m0 = train(as.formula(f), 
+  m0 = train(duration ~ pickup_x, pickup_y, dropoff_x, dropoff_y, weekday, hour_, day_, month_, distance^npoly, speed^npoly, # npoly is an input 
              data      = dataset, 
              method    = opt_method,                                   # Step selection
              tuneGrid  = data.frame(nvmax = 1 : num_param),            # Number of features to consider in the model
              trControl = train_control)
-  '
-  m0 = train(duration ~ poly(pickup_x, pickup_y, dropoff_x, dropoff_y, weekday, hour_, day_, distance, month_, speed, 
-                             degree = num_polynomials, raw = T), 
-             data      = dataset, 
-             method    = opt_method,                                   # Step selection
-             tuneGrid  = data.frame(nvmax = 1 : num_param),            # Number of features to consider in the model
-             trControl = train_control
-             )'
+
   # Results
   if (result2return == 'results'){
     print(paste('Results:',m0$results))

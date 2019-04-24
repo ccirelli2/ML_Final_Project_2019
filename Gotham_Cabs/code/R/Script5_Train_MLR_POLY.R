@@ -40,12 +40,12 @@ train_nrows_250k = (nrow(s3.250k.nolimits)   * .7)
 
 
 # Train
-s1.train = s1.50k.nolimits_ran[1:  (nrow(s1.50k.nolimits_ran)  * .7), ]
-s2.train = s2.100k.nolimits_ran[1: (nrow(s2.100k.nolimits_ran) * .7), ]
-s3.train = s3.250k.nolimits_ran[1: (nrow(s2.100k.nolimits_ran) * .7), ]
-s4.train = s4.50k.wlimits_ran[1:   (nrow(s4.50k.wlimits_ran)  * .7), ]
-s5.train = s5.100k.wlimits_ran[1:  (nrow(s5.100k.wlimits_ran)  * .7), ]
-s6.train = s6.250k.wlimits_ran[1:  (nrow(s6.250k.wlimits_ran)  * .7), ]
+s1.train = s1.50k.nolimits_ran[1:   train_nrows_50k, ]
+s2.train = s2.100k.nolimits_ran[1:  train_nrows_100k, ]
+s3.train = s3.250k.nolimits_ran[1:  train_nrows_250k, ]
+s4.train = s4.50k.wlimits_ran[1:    train_nrows_50k, ]
+s5.train = s5.100k.wlimits_ran[1:   train_nrows_100k, ]
+s6.train = s6.250k.wlimits_ran[1:   train_nrows_250k, ]
 
 # Test
 s1.test = s1.50k.nolimits_ran[train_nrows_50k:    nrow(s1.50k.nolimits_ran), ] # Index from training to total
@@ -61,29 +61,62 @@ s6.test = s6.250k.wlimits_ran[train_nrows_250k:   nrow(s6.250k.wlimits_ran), ]
 
 mlr.poly <- function(data_train, data_test, polynomial, objective) {
   # Train Model  
-  m1.mlr.poly = lm(duration ~ poly(pickup_x, pickup_y, dropoff_x, dropoff_y, weekday, hour_, day_, distance, month_, speed, 
+  m1.mlr.poly = lm(duration ~ poly(pickup_x, pickup_y, dropoff_x, dropoff_y, 
+                                   weekday, hour_,  day_,distance, 
+                                   month_, speed, 
                                    degree = polynomial, raw = T), data = data_train)
   # Return Summary Stats
   if (objective == 'train'){
-    m1.summary = summary(m1.mlr.poly)
-    return(m1.summary)
+    m1.summary               = summary(m1.mlr.poly)
+    train.rse                = sqrt((sum(m1.summary$residuals^2)) / length(m1.summary$residuals) -2)
+    return(train.rse)
   }
     # Generate Prediction
     if (objective == 'test'){ 
       m1.mlr.poly.predict    = predict(m1.mlr.poly, data_test)
-      m1.mlr.poly.rse        = sqrt(sum((s4.test$duration - m1.mlr.poly.predict)^2) / (length(m1.mlr.poly.predict) -2))
-      return(m1.mlr.poly.rse)
+      test.rse               = sqrt(sum((s4.test$duration - m1.mlr.poly.predict)^2) / (length(m1.mlr.poly.predict) -2))
+      return(test.rse)
     }
 }
 
 
-#mlr.poly(s4.train, s4.test, 4, 'train')
+# Create Lists to Capture Values & A DataFrame to House the Columns
+index.rse = c()
+list.train.rse = c()
+list.test.rse  = c()
+index_count = 1
 
-
-for (i in seq(1,4)){
-  rse = mlr.poly(s4.train, s5.test, i, 'test')
-  print(paste('Polynomial =>', i, 'RSE TEST =>', rse))
+# Iterate Over a Sequence of Values For The Polynomials
+for (i in seq(1,3, 0.1)){
+  index.rse[index_count] = i
+  print(paste('creating test set for poly =>', i))
+  train.rse = mlr.poly(s1.train, s1.test, i, 'train')
+  list.train.rse[index_count] = train.rse  
+  print(paste('creating train set for poly =>', i))
+  test.rse = mlr.poly(s1.train, s1.test, i, 'test')
+  list.test.rse[index_count] = test.rse
+  index_count = index_count + 1
 }
+
+print('hello world')
+
+# Create DataFrame
+df = data.frame(row.names = index.rse)
+df$index.rse = index.rse
+df$train.rse = list.train.rse
+df$test.rse = list.test.rse
+
+
+# Generate a Plot for Train & Test Points
+p = ggplot() + 
+  geom_line(data = df, aes(x = df$index.rse, y = df$train.rse, color = 'Train RSE')) +
+  geom_line(data = df, aes(x = df$index.rse, y = df$test.rse, color = 'Test RSE')) +
+  xlab('Number of Polynomials') + 
+  ylab('RSE') 
+
+print(p+ ggtitle('Plot Test & Training Polynomials'))
+
+df
 
 
 # Aggregate Results - Create Graph

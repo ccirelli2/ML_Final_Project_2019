@@ -46,7 +46,9 @@ model_opt <- function(dataset, opt_method, num_param, cv_grid, result2return){
    bestTune           A dataframe with the final parameters
    finalModel         Aa fit object using the best parameters'
   # Train Model
-  m0 = train(duration ~ ., data = dataset, 
+  m0 = train(duration ~ dataset$pickup_x, dataset$pickup_y, dataset$dropoff_x, dataset$dropoff_y, 
+             dataset$weekday, dataset$hour_, dataset$day_, dataset$distance, dataset$month_, dataset$speed,
+             data      = dataset, 
              method    = opt_method,                                   # Step selection
              tuneGrid  = data.frame(nvmax = 1 : num_param),            # Number of features to consider in the model
              trControl = cv_grid)                                      # Cross Validation technique 
