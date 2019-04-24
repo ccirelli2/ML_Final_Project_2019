@@ -74,7 +74,7 @@ mlr.poly <- function(data_train, data_test, polynomial, objective) {
     # Generate Prediction
     if (objective == 'test'){ 
       m1.mlr.poly.predict    = predict(m1.mlr.poly, data_test)
-      test.rse               = sqrt(sum((s4.test$duration - m1.mlr.poly.predict)^2) / (length(m1.mlr.poly.predict) -2))
+      test.rse               = sqrt(sum((data_test$duration - m1.mlr.poly.predict)^2) / (length(m1.mlr.poly.predict) -2))
       return(test.rse)
     }
 }
@@ -87,7 +87,7 @@ list.test.rse  = c()
 index_count = 1
 
 # Iterate Over a Sequence of Values For The Polynomials
-for (i in seq(1,3, 0.1)){
+for (i in seq(1, 3.5, 0.1)){
   index.rse[index_count] = i
   print(paste('creating test set for poly =>', i))
   train.rse = mlr.poly(s1.train, s1.test, i, 'train')
@@ -98,14 +98,11 @@ for (i in seq(1,3, 0.1)){
   index_count = index_count + 1
 }
 
-print('hello world')
-
 # Create DataFrame
 df = data.frame(row.names = index.rse)
 df$index.rse = index.rse
 df$train.rse = list.train.rse
 df$test.rse = list.test.rse
-
 
 # Generate a Plot for Train & Test Points
 p = ggplot() + 
@@ -116,7 +113,7 @@ p = ggplot() +
 
 print(p+ ggtitle('Plot Test & Training Polynomials'))
 
-df
+
 
 
 # Aggregate Results - Create Graph

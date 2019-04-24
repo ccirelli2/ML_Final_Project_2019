@@ -60,24 +60,26 @@ s6.250k.wlimits_ran    = s6.250k.wlimits[sample(nrow(s6.250k.wlimits)), ]
 
 # TRAIN / TEST SPLIT______________________________________________________________________
 
-# training split
-train_nrows = (nrow(s1.50k.nolimits_ran)  * .7)                          # Caculate num rows for training set. 
+# Training Set Sizes
+train_nrows_50k  = (nrow(s1.50k.nolimits)  * .7)
+train_nrows_100k = (nrow(s2.100k.nolimits)   * .7)
+train_nrows_250k = (nrow(s3.250k.nolimits)   * .7)
 
 # Train
 s1.train = s1.50k.nolimits_ran[1:  (nrow(s1.50k.nolimits_ran)  * .7), ]
-s2.train = s2.100k.nolimits_ran[1: (nrow(s2.100k.nolimits_ran) * .7), ]
-s3.train = s3.250k.nolimits_ran[1: (nrow(s2.100k.nolimits_ran) * .7), ]
-s4.train = s4.50k.wlimits_ran[1:   (nrow(s4.50k.wlimits_ran)  * .7), ]
-s5.train = s5.100k.wlimits_ran[1:  (nrow(s5.100k.wlimits_ran)  * .7), ]
+s3.train = s2.100k.nolimits_ran[1: (nrow(s2.100k.nolimits_ran) * .7), ]
+s5.train = s3.250k.nolimits_ran[1: (nrow(s2.100k.nolimits_ran) * .7), ]
+s2.train = s4.50k.wlimits_ran[1:   (nrow(s4.50k.wlimits_ran)  * .7), ]
+s4.train = s5.100k.wlimits_ran[1:  (nrow(s5.100k.wlimits_ran)  * .7), ]
 s6.train = s6.250k.wlimits_ran[1:  (nrow(s6.250k.wlimits_ran)  * .7), ]
 
 # Test
-s1.test = s1.50k.nolimits_ran[train_nrows:  nrow(s1.50k.nolimits_ran), ] # Index from training to total
-s2.test = s2.100k.nolimits_ran[train_nrows: nrow(s2.100k.nolimits_ran), ]
-s3.test = s3.250k.nolimits_ran[train_nrows: nrow(s3.250k.nolimits_ran), ]
-s4.test = s4.50k.wlimits_ran[train_nrows:   nrow(s4.50k.wlimits_ran), ]
-s5.test = s5.100k.wlimits_ran[train_nrows:  nrow(s5.100k.wlimits_ran), ]
-s6.test = s6.250k.wlimits_ran[train_nrows:  nrow(s6.250k.wlimits_ran), ]
+s1.test = s1.50k.nolimits_ran[ train_nrows_50k:   length(s1.50k.nolimits_ran), ]
+s3.test = s2.100k.nolimits_ran[train_nrows_100k: length(s2.100k.nolimits_ran) ,]
+s5.test = s3.250k.nolimits_ran[train_nrows_250k: length(s3.250k.nolimits_ran), ]
+s2.test = s4.50k.wlimits_ran[  train_nrows_50k:   length(s1.50k.nolimits_ran), ]
+s4.test = s5.100k.wlimits_ran[ train_nrows_100k: length(s2.100k.nolimits_ran) ,]
+s6.test = s6.250k.wlimits_ran[ train_nrows_250k: length(s2.100k.nolimits_ran) ,]
 
 
 ## M1:   Duration vs Distance_______________________________________________________________________________________
@@ -90,8 +92,7 @@ m1.train.mse     = mean(m1.summary$residuals^2)
 
 # M1 Prediction
 m1.lr.predict    = predict(m1.lr, s6.test)
-m1.rse           = sqrt(sum((s6.test$duration - m1.lr.predict)^2) / (length(ml.predict) -2))
-
+m1.rse           = sqrt(sum((s6.test$duration - m1.lr.predict)^2) / (length(m1.lr.predict) -2))
 m1.rse
 
 
@@ -133,18 +134,15 @@ df$test.rse = list.test.rse
 
 
 # Generate a Plot for Train & Test Points
-p = ggplot() + 
-  geom_line(data = df, aes(x = df$index.rse, y = df$train.rse, color = 'Train RSE')) +
-  geom_line(data = df, aes(x = df$index.rse, y = df$test.rse, color = 'Test RSE')) +
-  xlab('Data Set NUmber') + 
-  ylab('RSE') 
-
-print(p+ ggtitle('SIMPLE LR - DURATION ~ DISTANCE - PLOT TEST VS TRAINING RSE'))
+barplot(data = df, height = df$test.rse, main = 'Simple Linear Reggresion - Compare Datasets', 
+        legend = test_sets, beside = TRUE, col = 'darkblue', 
+        xlab = 'Datasets', ylab = 'RSE')
+ 
 
 
 
 
-
+df
 
 
 

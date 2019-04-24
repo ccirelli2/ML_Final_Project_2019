@@ -149,13 +149,30 @@ s6.test = s6.250k.wlimits_ran[train_nrows_250k:   nrow(s6.250k.wlimits_ran), ]
 '
 
 # Create Training Method - Method = Cross Validation, Folds = 10
-train.control = trainControl(method = 'cv', number = 10)
 
 
+mlr.poly <- function(data_train, data_test, polynomial, objective) {
+  # Train Model  
+  m1.mlr.poly = lm(duration ~ poly(pickup_x, pickup_y, dropoff_x, dropoff_y, 
+                                   weekday, hour_,  day_,distance, 
+                                   month_, speed, 
+                                   degree = polynomial, raw = T), data = data_train)
+  # Return Summary Stats
+  if (objective == 'train'){
+    m1.summary               = summary(m1.mlr.poly)
+    train.rse                = sqrt((sum(m1.summary$residuals^2)) / length(m1.summary$residuals) -2)
+    return(train.rse)
+  }
+  # Generate Prediction
+  if (objective == 'test'){ 
+    m1.mlr.poly.predict    = predict(m1.mlr.poly, data_test)
+    test.rse               = sqrt(sum((data_test$duration - m1.mlr.poly.predict)^2) / (length(m1.mlr.poly.predict) -2))
+    return(test.rse)
+  }
+}
 
 
-
-
+mlr.poly(s1.train, s1.test, 2, 'test')
 
 
 
