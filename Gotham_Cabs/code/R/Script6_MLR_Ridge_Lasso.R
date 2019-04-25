@@ -62,23 +62,23 @@ s6.test = s6.250k.wlimits_ran[ train_nrows_250k:  nrow(s6.250k.wlimits_ran), ]
 
 
 # Separate Target & Feature Values
-s1_y = s1.train$duration
-s1_x = as.matrix(s1.train[,2:11])
+s1_y = s1.50k.nolimits_ran$duration
+s1_x = as.matrix(s1.50k.nolimits_ran[,2:11])
 
-s2_y = s2.train$duration
-s2_x = as.matrix(s2.train[,2:11])
+s2_y = s2.100k.nolimits_ran$duration
+s2_x = as.matrix(s2.100k.nolimits_ran[,2:11])
 
-s3_y = s3.train$duration
-s3_x = as.matrix(s3.train[,2:11])
+s3_y = s3.250k.nolimits_ran$duration
+s3_x = as.matrix(s3.250k.nolimits_ran[,2:11])
 
-s4_y = s4.train$duration
-s4_x = as.matrix(s4.train[,2:11])
+s4_y = s4.50k.wlimits_ran$duration
+s4_x = as.matrix(s4.50k.wlimits_ran[,2:11])
 
-s5_y = s5.train$duration
-s5_x = as.matrix(s5.train[,2:11])
+s5_y = s5.100k.wlimits_ran$duration
+s5_x = as.matrix(s5.100k.wlimits_ran[,2:11])
 
-s6_y = s6.train$duration
-s6_x = as.matrix(s6.train[,2:11])
+s6_y = s6.250k.wlimits_ran$duration
+s6_x = as.matrix(s6.250k.wlimits_ran[,2:11])
 
 # Generate Grid Possible Values Lambda
 grid = 10^seq(from = 10, to = -2, length = 100)                 #length = desired length of sequence
@@ -92,7 +92,6 @@ m1.ridge <- glmnet(s1_x, s1_y, alpha = 0, lambda = grid, standardize = TRUE)
 # Create List to Capture Sum of Coefficients
 list_sum_ceoffs <- c()
 df = data.frame(row.names = grid)
-
 
 # Compare Value of Coefficients 
 for (i in seq(1,length(m1.ridge$lambda))){
@@ -108,73 +107,56 @@ ggplot(data = df, aes(x = seq(1,100), y = df$sumcoeff)) + geom_line() + ggtitle(
 
 
 
+# M2:   FIND OPTIMAL LAMBDAS FOR RIDGE & LASSO________________________________________________
 
-# M3:   TRAIN MULTILINEAR MODEL - INSPECT COEFFICEINTS FOR LASSO______________________________
+# Define Lists to Capture Output
+rse.test = c()
+list.lambda    = c()
+X.datasets     = list(s1_x, s4_x, s5_x, s6_x)
+Y.datasets     = list(s1_y, s4_y, s5_y, s6_y)
+names.datasets = c('50knl','50kwl', '100kwl', '250kwl')
 
-# Train MLR Using All Lambdas Grid 
-m3.lasso <- glmnet(s1_x, s1_y, alpha = 1, lambda = grid, standardize = TRUE)
-
-# 25th Lambda
-print(paste('25th Lambda =>', m3.lasso$lambda[25]))           # Value of 25th Lambda
-print((coef(m3.lasso)[,25]))                                  # Odd, all coefficeints are zero
-m3.coeff_25th = coef(m3.lasso)[,25]
-m3.sqrt.sq.coeff.25th = sum(sqrt(m3.coeff_25th^2))
-m3.sqrt.sq.coeff.25th
-
-# 75th Lambda
-print(paste('50th Lambda =>', m_cv$lambda[50]))           # Value of 75th Lambda
-print((coef(m3.lasso)[,50]))         # Coefficients derived from 75th Lambda
-m3.coeff_50th = coef(m3.lasso)[,50]
-m3.sqrt.sq.coeff.50th = sum(sqrt(m3.coeff_50th^2))
-m3.sqrt.sq.coeff.50th
-
-
-
-# M4:   FIND OPTIMAL LAMBDAS FOR RIDGE & LASSO________________________________________________
-
-# Define Function - Train Model------------------------------------------------------------
-
-ridge_cv <- function(X, Y, grid, c_alpha, opt_lambda, c_plot){
-  # Train Cross Validation Model
-  m_cv <- cv.glmnet(X, Y, alpha = c_alpha, lambda = grid, standardize = TRUE, nfolds = 10)
-  # Plot RSE vs Lambda Selection
-  if(c_plot == TRUE){
-    plot(m_cv, main = "MLR - 10KFOLD USING RIDGE")
-  }
+for (i in seq(1,4)){
+  # Create Data Objects
+  print('Creating Datasets')
+  X = X.datasets[[i]]
+  Y = Y.datasets[[i]]
+  # Train Model Using CV
+  print('Training CV Model')
+  m_cv = cv.glmnet(X, Y, alpha = 0, lambda = grid, standardize = TRUE, nfolds = 10)
   # Get Best Lambda
   cv_lambda = m_cv$lambda.min
-  if(opt_lambda == TRUE){
-    print(paste('Optimal lambda =>', round(cv_lambda, 2)))
-  }
   # Fit Model w/ Best Lambda
-  m_optimal <- glmnet(X, Y, alpha = c_alpha, lambda = cv_lambda, standardize = TRUE)
+  print('Fit Model w/ Best Lambda')
+  m_optimal <- glmnet(X, Y, alpha = 0, lambda = cv_lambda, standardize = TRUE)
+  # Generate Prediction
+  print('Generate Prediction')
   y_hat_cv <- predict(m_optimal, X)
+  # Calculate RSE
+  print('Calculate RSE')
   model_cv_rse = sqrt(sum((Y - y_hat_cv)^2) / (length(Y) - 2))
-  return(model_cv_rse)
+  print(paste('Model ', i, 'RSE =>', model_cv_rse))
+  # Append RSE Values To List
+  rse.test[i] = round(model_cv_rse,0)
+  print(paste('Iteration', i, 'completed'))
 }
 
 
-# List Datasets
 
-# Ridge 
-ridge_model = ridge_cv(s4_x, s4_y, grid, c_alpha = 0, opt_lambda = TRUE, c_plot = FALSE)
-ridge_model
-
-
-  # Lasso
-lasso_model = ridge_cv(s4_x, s4_y, grid, c_alpha = 1, opt_lambda = TRUE, c_plot = FALSE)
-lasso_model
+# Create DataFrame
+df = data.frame(row.names = names.datasets)
+df$ridge.rse = rse.test
 
 
-## Results_______________________________________________________________________________
-model.name = list('m1.mlr.s1', 'm2.ridge.s1.50k.nl', 'm3.ridge.s2.50k.wl', 'm4.ridge.s4.100k.wl', 'm5.lasso.s1.50k.nl',
-                  'm6.lasso.s2.50k.wl', 'm7.lasso.s4.100k.wl')
-model.rse = c(280.2, 280.1613, 246.52, 241.053, 280.1571, 246.52, 241.053)
+# Generate a Plot for Train & Test Points
+ggplot(df, aes(y = df$ridge.rse, x = names.datasets, fill = names.datasets)) + geom_bar(stat = 'identity') + 
+  ggtitle('Multilinear Lasso Regression - 4 Datasets - RSE') + 
+  scale_y_continuous(breaks = pretty(df$ridge.rse, n = 5))
+df
 
 
-barplot(model.rse,  names.arg = model.name, cex.names = .75, las = 2, 
-        main = "Comparison Ridge & Lasso RSE", 
-        ylab = 'RSE')
+
+
 
 
 
