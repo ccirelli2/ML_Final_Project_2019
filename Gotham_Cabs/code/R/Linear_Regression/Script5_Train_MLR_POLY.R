@@ -90,19 +90,22 @@ index_count = 1
 for (i in seq(1, 3.5, 0.1)){
   index.rse[index_count] = i
   print(paste('creating test set for poly =>', i))
-  train.rse = mlr.poly(s1.train, s1.test, i, 'train')
-  list.train.rse[index_count] = train.rse  
+  train.rse = mlr.poly(s6.train, s6.test, i, 'train')
+  list.train.rse[index_count] = round(train.rse, 2)  
   print(paste('creating train set for poly =>', i))
   test.rse = mlr.poly(s1.train, s1.test, i, 'test')
-  list.test.rse[index_count] = test.rse
+  print(paste('Test RSE', round(test.rse,2)))
+  list.test.rse[index_count] = round(test.rse,2)
   index_count = index_count + 1
 }
+
 
 # Create DataFrame
 df = data.frame(row.names = index.rse)
 df$index.rse = index.rse
 df$train.rse = list.train.rse
 df$test.rse = list.test.rse
+df
 
 # Generate a Plot for Train & Test Points
 p = ggplot() + 
@@ -112,6 +115,7 @@ p = ggplot() +
   ylab('RSE') 
 
 print(p+ ggtitle('Plot Test & Training Polynomials'))
+
 
 
 
