@@ -1,6 +1,9 @@
 # READINGS_______________________________________________________________________________
-'Train Regression Tree:
+'Train Regression Tree using rpart:
  - https://www.statmethods.net/advstats/cart.html
+
+Regression Trees using Tree
+ - http://www.di.fc.ul.pt/~jpn/r/tree/tree.html
 '
 
 ## CLEAR NAMESPACE________________________________________________________________________
@@ -8,9 +11,9 @@ rm(list = ls())
 
 ## IMPORT LIBRARIES_______________________________________________________________________
 library(rpart)
+library(tree)
 
-
-## CREATE DATASET_________________________________________________________________________
+  ## CREATE DATASET_________________________________________________________________________
 setwd('/home/ccirelli2/Desktop/Repositories/ML_Final_Project_2019/Gotham_Cabs/data')
 s1.50k.nolimits        = read.csv('sample1_50k.csv')[2:12]                          #[2:12] drop datetime col. 
 s2.100k.nolimits       = read.csv('sample1_100k.csv')[2:12]
@@ -37,7 +40,6 @@ train_nrows_50k  = (nrow(s1.50k.nolimits)  * .7)
 train_nrows_100k = (nrow(s2.100k.nolimits)   * .7)
 train_nrows_250k = (nrow(s3.250k.nolimits)   * .7)
 
-
 # Train
 s1.train = s1.50k.nolimits_ran[1:   train_nrows_50k, ]
 s2.train = s2.100k.nolimits_ran[1:  train_nrows_100k, ]
@@ -53,4 +55,18 @@ s3.test = s3.250k.nolimits_ran[train_nrows_250k:  nrow(s3.250k.nolimits_ran), ]
 s4.test = s4.50k.wlimits_ran[train_nrows_50k:     nrow(s4.50k.wlimits_ran), ]
 s5.test = s5.100k.wlimits_ran[train_nrows_100k:   nrow(s5.100k.wlimits_ran), ]
 s6.test = s6.250k.wlimits_ran[train_nrows_250k:   nrow(s6.250k.wlimits_ran), ]
+
+
+# TRAIN REGRESSION TREE - rpart________________________________________________
+m1.fit = rpart(duration ~ ., method = 'anova', data = s4.50k.wlimits_ran)            # anova - used for regression trees
+print('hello world')
+printcp(m1.fit)
+
+# TRAIN REGRESSION TREE - TREE___________________________________________________
+m2.fit = tree(log(duration) ~ ., data = s4.50k.wlimits_ran)
+plot(m2.fit)
+text(m2.fit, cex = .75)
+summary(m2.fit)
+
+
 
