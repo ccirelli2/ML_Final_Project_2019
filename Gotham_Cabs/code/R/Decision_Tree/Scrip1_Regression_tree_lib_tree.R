@@ -4,6 +4,41 @@
 
 Regression Trees using Tree
  - http://www.di.fc.ul.pt/~jpn/r/tree/tree.html
+
+Regression Trees 
+- https://www.datacamp.com/community/tutorials/decision-trees-R
+
+R Documentation "tree"
+- https://www.rdocumentation.org/packages/tree/versions/1.0-39/topics/tree
+
+Tree Control
+- https://rdrr.io/cran/tree/man/tree.control.html
+'
+
+'Regression Tree Tuning Parameters
+ - tree()      :  A tree is grown by binary recursive partitioning using the response in the specified formula 
+                  and choosing splits from the terms of the right-hand-side.
+                  Tree growth is limited to a depth of 31 by the use of integers to label nodes. (source R documentation)
+                  - formula:    target ~ features
+                  - weights:    ?
+                  - subset:     ? an expression specifying the subset of cases to be used. 
+                  - control:    control paramaters that you can pass to your model. 
+                  - method:     
+ - prune.tree():  Determines a nested sequence of subtrees of the supplied tree by recursively “snipping” off the 
+                  least important splits.  If k is supplied, the optimal subtree for that value is returned.
+                  - best:       max number of terminal nodes 
+                  - dataframe:  data frame upon which the sequance of cost-complexity subtrees is evaluated. 
+                  - method:     for regression trees only "deviance" is accepted. For classification an alternative
+                                "misclassification" is allowed. 
+ - tree.control() 
+                  - nobs:       The number of observations in a training set
+                  - mincut:     The minimum number of observations to include in either child node. Defaul = 5. 
+                  - minsize:    The smallest allowed node size. The default is 10. 
+                  - mindev:     
+                  - NOTE:       This function produces default values of mincut and minsize, and ensures that mincut is 
+                                at most half minsize.
+                                To produce a tree that fits the data perfectly, set mindev = 0 and minsize = 2, 
+                                if the limit on tree depth allows such a tree.
 '
 
 ## CLEAR NAMESPACE________________________________________________________________________
@@ -12,8 +47,9 @@ rm(list = ls())
 ## IMPORT LIBRARIES_______________________________________________________________________
 library(rpart)
 library(tree)
+library(ggplot2)
 
-  ## CREATE DATASET_________________________________________________________________________
+## CREATE DATASET_________________________________________________________________________
 setwd('/home/ccirelli2/Desktop/Repositories/ML_Final_Project_2019/Gotham_Cabs/data')
 s1.50k.nolimits        = read.csv('sample1_50k.csv')[2:12]                          #[2:12] drop datetime col. 
 s2.100k.nolimits       = read.csv('sample1_100k.csv')[2:12]
@@ -103,7 +139,7 @@ list.test.unknowndata.rse = c()
 index.count = 1
 
 # Iterate Over Range of Values for mindev
-for (i in seq(0.0001, 0.01, 0.00025)){
+for (i in seq(0.01, 0.001, -0.005)){
   # Train Model
   index.mindev[index.count] = i
   m0.train = tree(duration ~ ., data = s6.train, mindev = i)           # Controls the number of nodes.  Default = 0.01
@@ -136,6 +172,18 @@ df.0 = data.frame(row.names = index.mindev)
 df.0$train.rse = list.train.rse
 df.0$test.rse = list.test.rse
 df.0$unknowndata.test.rse = list.test.unknowndata.rse
-df.0
+
+# Plot Results
+p = ggplot() + 
+  geom_line(data = df.0, aes(x = index.mindev, y = df.0$train.rse, color = 'Train RSE')) +
+  geom_line(data = df.0, aes(x = index.mindev, y = df.0$test.rse, color = 'Test RSE')) +
+  xlab('Range Values Min Dev') + 
+  ylab('RSE') 
+print(p)
+
+
+
+
+
 
 
