@@ -1,5 +1,10 @@
 ## READING MATERIALS______________________________________________________________________
-'http://www.sthda.com/english/articles/37-model-selection-essentials-in-r/154-stepwise-regression-essentials-in-r/'
+'
+How to Perform Stepwise Selection:
+- http://www.sthda.com/english/articles/37-model-selection-essentials-in-r/154-stepwise-regression-essentials-in-r/
+Definitions:  RMSE, RSE, MAE, RAE:
+- https://www.saedsayad.com/model_evaluation_r.htm
+'
 
 ## CLEAR NAMESPACE________________________________________________________________________
 rm(list = ls()) 
@@ -34,6 +39,44 @@ s5.100k.wlimits_ran    = s5.100k.wlimits[sample(nrow(s5.100k.wlimits)), ]
 s6.250k.wlimits_ran    = s6.250k.wlimits[sample(nrow(s6.250k.wlimits)), ]
 
 
+# TRAIN MODELS____________________________________________________________________________
+
+# Define Train Control Object
+train.control = trainControl(method = 'cv', number = 10)
+
+# FORWARD SELECTION ----------------------------------------------------------------------
+m6.forward = train(duration ~ ., data = s6.250k.wlimits_ran, 
+                   method = 'leapForward', 
+                   tuneGrid = data.frame(nvmax = 2:11), 
+                   trControl = train.control)
+# Get Results
+m6.summary = summary(m6.forward$finalModel)     
+m6.forward$bestTune
+
+# Plot Results RMSE vs Number of Features
+plot(m6.forward$results$RMSE, main = 'MLR - Forward Selection - RMSE', xlab = 'Number of Features')
+
+
+# BACKWARD SELECTION----------------------------------------------------------------------
+
+m7.backward = train(duration ~ ., data = s6.250k.wlimits_ran, 
+                    method = 'leapBackward', 
+                    tuneGrid = data.frame(nvmax = 1:11), 
+                    trControl = train.control)
+m7.backward
+m7.backward$results
+summary(m7.backward$finalModel)     
+
+print('hello world')
+
+
+
+
+
+
+
+
+
 
 # M1:     BACKWARD SELECTION_____________________________________________________________
 
@@ -42,9 +85,9 @@ train.control = trainControl(method = 'cv', number = 10)
 
 model_opt <- function(dataset, opt_method, num_param, cv_grid, result2return){
   'opt_method:        either leapBackward or leapForward
-   results:           A dataframe with the training error rate and values for the tuning params
-   bestTune           A dataframe with the final parameters
-   finalModel         Aa fit object using the best parameters'
+  results:           A dataframe with the training error rate and values for the tuning params
+  bestTune           A dataframe with the final parameters
+  finalModel         Aa fit object using the best parameters'
   # Train Model
   m0 = train(duration ~ dataset$pickup_x, dataset$pickup_y, dataset$dropoff_x, dataset$dropoff_y, 
              dataset$weekday, dataset$hour_, dataset$day_, dataset$distance, dataset$month_, dataset$speed,
@@ -56,58 +99,26 @@ model_opt <- function(dataset, opt_method, num_param, cv_grid, result2return){
   if (result2return == 'results'){
     print(paste('Results:',m0$results))
     return(m0$results)}
-    
-    # Final Model - # An asterisk specifies that the feature was included in the model
-    else if (result2return == 'finalModel'){
-      print(summary(m0$finalModel))
-      return(summary(m1.backward$finalModel))}      
-    
-    else if (result2return == 'bestTune'){
-      print(paste('Best Tune:', m0$bestTune))
-      return(m0$bestTune)}
+  
+  # Final Model - # An asterisk specifies that the feature was included in the model
+  else if (result2return == 'finalModel'){
+    print(summary(m0$finalModel))
+    return(summary(m1.backward$finalModel))}      
+  
+  else if (result2return == 'bestTune'){
+    print(paste('Best Tune:', m0$bestTune))
+    return(m0$bestTune)}
 }
 
 
-m0.output = model_opt(s6.250k.wlimits_ran, 'leapBackward', 11, train.control, 'results')
+m0.output = model_opt(s4.50k.wlimits_ran, 'leapBackward', 11, train.control, 'bestTune')
 
 
 param_index = seq(from = 1, to = 11, by = 1)
 m0.output$RMSE
 
 plot(m0.output$RMSE, type = 'o', names.arg = param_index, main = 'FORKWARD SELECTION - RMSE FOR NUM OF PARAMETERS', 
-        xlab = 'Number of Parameters', ylab = 'RMSE')
-
-
-
-
-
-
-
-# Train Model 6:  Forward Selection
-m6.forward = train(duration ~ ., data = s1.50k.nopp.train, 
-                   method = 'leapForward', 
-                   tuneGrid = data.frame(nvmax = 1:7), 
-                   trControl = train.control)
-
-
-# Train Model 7:  Stepwise Selection Using Processed Data
-train.control = trainControl(method = 'cv', number = 10)
-m6.forward$results
-summary(m6.forward$finalModel)     
-
-m7.backward = train(duration ~ ., data = s1.50k.pp.train, 
-                    method = 'leapBackward', 
-                    tuneGrid = data.frame(nvmax = 1:7), 
-                    trControl = train.control)
-m7.backward$results
-summary(m7.backward$finalModel)     
-
-# How can you make a prediction suing train?
-
-
-# Need to try Ridge & Lasso
-
-
+     xlab = 'Number of Parameters', ylab = 'RMSE')
 
 
 
