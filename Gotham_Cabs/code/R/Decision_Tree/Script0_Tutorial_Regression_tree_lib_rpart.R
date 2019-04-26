@@ -1,4 +1,4 @@
-E# DOCUMENTATION__________________________________________________________________________
+# DOCUMENTATION__________________________________________________________________________
 'Usage
 rpart(formula, data, weights, subset, na.action = na.rpart, method,
       model = FALSE, x = FALSE, y = TRUE, parms, control, cost, ...)
@@ -81,7 +81,7 @@ query1_alldata = dbSendQuery(mydb, 'SELECT
                              AND duration < 5000
                              AND speed < 1000
                              ORDER BY RAND()
-                             LIMIT 75000;')
+                             LIMIT 500000;')
 data.random.sample = fetch(query1_alldata, n = -1)
 s7.test = data.random.sample[,2:12]
 

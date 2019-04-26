@@ -66,23 +66,23 @@ s6.test = s6.250k.wlimits_ran[train_nrows_250k:   nrow(s6.250k.wlimits_ran), ]
 
 # M1 - RANDOM FOREST MODEL____________________________________________________________
 t1 = Sys.time()
-m1 = randomForest(duration ~ ., data = s1.train, ntree = 50, mtry = 5)
+m1 = randomForest(duration ~ ., data = s6.train, ntree = 50, mtry = 11)
 print(Sys.time() - t1)
 
-# Call Model
+# Get Model Data
 m1
 # Plot Model
 'Will show you how the MSE falls versus the number of trees generated'
 plot(m1, main = 'Random Forest Tree - Plot Error vs Num Trees')                              # Looks like its bottoming out around 35
-
 # Number of trees with lowest MSE (Elbow point)
 min.rse = which.min(m1$mse)
 min.rse
 # Feature Importance
 importance(m1)
 varImpPlot(m1, main = 'Variable Importance Plot - Node Purity')
-
-
+# Get Tree With Best RSE
+m1.min.rse    = sqrt(m1$mse[which.min(m1$mse)])
+m1.min.rse
 
 # M2 -  - TRAINING / TEST SPLIT_________________________________________
 t1 = Sys.time()
@@ -118,9 +118,13 @@ system.time(
               num.trees = 50,
               mtry      = 3))
 
+# M4    INITIAL TUNING (MTRY)______________________________________________________________
 
-# M4 - FULL GRID SEARCH____________________________________________________________________
 
+
+
+# M5 - FULL GRID SEARCH____________________________________________________________________
+?randomForest
 # Create Hypergrid of features (dataframe of all combinations of the supplied vectors)
 hyper_grid = expand.grid(
              mtry        = seq(2,10, by = 2), 
