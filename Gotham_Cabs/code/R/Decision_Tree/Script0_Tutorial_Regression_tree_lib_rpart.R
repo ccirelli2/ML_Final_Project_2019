@@ -80,7 +80,7 @@ s6.test = s6.250k.wlimits_ran[train_nrows_250k:   nrow(s6.250k.wlimits_ran), ]
           - yval      prediction
           - *         denotes a terminal node
 '
-m1.train = rpart(duration ~ ., data = s1.train, method = 'anova')
+m1.train = rpart(duration ~ ., data = s6.train, method = 'anova')
 
 # Model1 - Plot
 'Interpretation:
@@ -93,6 +93,7 @@ rpart.plot(m1.train, type = 3, extra = 101, fallen.leaves = T, main = 'Regressio
 # Model1 - Calculate Train RSE
 m1.residuals = residuals(m1.train)
 m1.train.rse = sqrt(sum(m1.residuals^2) / (length(m1.residuals) - 2))
+print(m1.train.rse)
 
 # Model1 - Generate a Prediction
 m1.predict   = predict(m1.train, s1.test)
@@ -121,25 +122,29 @@ m1.test.rse
 m2.train = rpart(duration ~ ., data = s6.train, method = 'anova', 
                  control = rpart.control(cp = .0016, minsplit = 5, minbucket = 5, maxdepth = 10))
 
-
 # Plot Tree
-rpart.plot(m2.train, type = 3, extra = 101, fallen.leaves = T, main = 'Regression Tree - M2')
-
+rpart.plot(m2.train, type = 5, extra = 101, fallen.leaves = T, main = 'Regression Tree - M2')
 
 # Calculate Test Residual
 m2.residuals = residuals(m2.train)
 m2.train.rse = sqrt(sum(m2.residuals^2) / (length(m2.residuals) - 2))
-print(paste('Train MSE =>', round(m2.train.rse, 4)))
+print(paste('Train RSE =>', round(m2.train.rse, 4)))
+
+# Make Predictin - Unpurned Tree
+m2.unpruned.predict = predict(m2.train, s6.test)
+m2.unpruned.test.rse = sqrt(sum((s6.test$duration - m2.unpruned.predict)^2) / (length(s6.test$duration) -2) )
+print(paste('Model-2 Test RSE =>', round(m2.unpruned.test.rse, 4)))                  # Pre-pruning test erorr was better. 
 
 # Method For Tuning 
 '- Method
-            Grow Tree to Full Size
-            Prune it back
- - Xval:    default parameter, set at 10.  Sounds like Kfold. Used for cross validation. 
-            It gives you the error for each fit. 
- - Plot:    Top axis = size of the tree, Bottom axis = cp value, Xval = error?
-            *You can use the top axis to figure out where you should stop growing your tree.  here it looks like it should be 13. 
- - xerror   according to the video there should be an elbow point with the xerror. 
+                  Grow Tree to Full Size
+                  Prune it back
+ - Xval:          default parameter, set at 10.  Sounds like Kfold. Used for cross validation. 
+                  It gives you the error for each fit. 
+ - Plot:          Top axis = size of the tree, Bottom axis = cp value, Xval = error?
+                  *You can use the top axis to figure out where you should stop growing your tree.  here it looks like it should be 13. 
+ - xerror         according to the video there should be an elbow point with the xerror
+ - relative error:  (y - yi) / y 
  
  How to chose the appropriate cp?
  - step1    find the lowest cp that results from printcp
@@ -154,15 +159,18 @@ plotcp(m2.train)
 
 # Prune Tree
 m2.prune = prune(m2.train, cp = 0.001)
-rpart.plot(m2.prune, cex = .5, extra = 1)
+rpart.plot(m2.prune, cex = .5, extra = 1)                               # Can we get auto feedback on the size of tree?
 
 # Calculate Test RSE (Compare Pruned Tree to Original Tree)
 
 # Make a Prediction
-m2.predict = predict(m2.train, s6.test)
-m2.test.rse = sqrt(sum((s6.test$duration - m2.predict)^2) / (length(s6.test$duration) -2) )
-print(paste('Model-2 test rse =>', m2.test.rse))
+m2.prune.predict = predict(m2.prune, s6.test)
+m2.prune.test.rse = sqrt(sum((s6.test$duration - m2.prune.predict)^2) / (length(s6.test$duration) -2) )
+print(paste('Model-2 test rse =>', m2.prune.test.rse))                  # Pre-pruning test erorr was better. 
 
+
+# Try a holdout dataset to guage the error rate. 
+rpart.plot(m2.prune, type = 1, extra = 101, fallen.leaves = F)
 
 
 
