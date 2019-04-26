@@ -141,9 +141,9 @@ for (i in seq(1,10)){
   list.m0.train.rse[i] = sqrt(m0$prediction.error)
   print('Generating Prediction')
   m0.predict = predict(m0, s4.test)
-  m0.rse     = sqrt(sum((s4.test$duration - m0.predict$predictions)^2) / (length(s4.test$duration) -2))
+  m0.test.rse     = sqrt(sum((s4.test$duration - m0.predict$predictions)^2) / (length(s4.test$duration) -2))
   list.m0.mtry[i] = i
-  list.m0.rse[i]  = round(m0.rse,4)
+  list.m0.test.rse[i]  = round(m0.test.rse,4)
   print(paste('Model => ', i, ' RSE =>', round(m0.rse,4)))
   print('--------------------------------------------------')
 }
@@ -153,14 +153,18 @@ df = data.frame(row.names = list.m0.mtry)
 df$RSE.Train = list.m0.train.rse
 df$RSE.Test  = list.m0.test.rse
 
+# Graph Results
+p = ggplot() + 
+  geom_line(data = df, aes(x = list.m0.mtry, y = list.m0.train.rse, color = 'Train RSE')) +
+  geom_line(data = df, aes(x = list.m0.mtry, y = list.m0.test.rse, color = 'Test RSE')) +
+  xlab('MTRY Value') + 
+  ylab('RSE') 
 
-
-
-
+print(p+ ggtitle('Random Forest - MTRY Values - RSE'))
 
 
 # M5 - FULL GRID SEARCH____________________________________________________________________
-?randomForest
+
 # Create Hypergrid of features (dataframe of all combinations of the supplied vectors)
 hyper_grid = expand.grid(
              mtry        = seq(2,10, by = 2), 
