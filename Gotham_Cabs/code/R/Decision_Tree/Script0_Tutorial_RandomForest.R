@@ -111,14 +111,50 @@ sqrt(m2$mse[which.min(m2$mse)])
 
 # M3 - RANGER - FASTER IMPLEMENTATION RANDOM FOREST_________________________________________
 
-system.time(
-  m3 <- ranger(
-              formula   = duration ~ ., 
-              data      = s1.50k.nolimits_ran, 
-              num.trees = 50,
-              mtry      = 3))
+m3 <- ranger(formula   = duration ~ ., 
+             data      = s1.train, 
+             num.trees = 50,
+             mtry      = 3)
+m3.predict = predict(m3, s1.test)
+m3.rse     = sqrt(sum((s1.test$duration - m3.predict$predictions)^2) / (length(s1.test$duration) -2))
+
 
 # M4    INITIAL TUNING (MTRY)______________________________________________________________
+'Optomize based on different values for mtry
+
+randomForest::tuneRF() ** Not working. 
+'
+# Create Lists to Capture Model Output
+list.m0.mtry      = c()
+list.m0.train.rse = c()
+list.m0.test.rse  = c()
+
+# Iterate Over Different Values for MTRY
+for (i in seq(1,10)){
+  # Train Model
+  print(paste('Training model for MTRY =>', i))
+  m0 =   ranger(formula   = duration ~ ., 
+                data      = s4.train, 
+                num.trees = 500,
+                mtry      = i)
+  # Generate Train Error
+  list.m0.train.rse[i] = sqrt(m0$prediction.error)
+  print('Generating Prediction')
+  m0.predict = predict(m0, s4.test)
+  m0.rse     = sqrt(sum((s4.test$duration - m0.predict$predictions)^2) / (length(s4.test$duration) -2))
+  list.m0.mtry[i] = i
+  list.m0.rse[i]  = round(m0.rse,4)
+  print(paste('Model => ', i, ' RSE =>', round(m0.rse,4)))
+  print('--------------------------------------------------')
+}
+
+# Create Data frame to house results
+df = data.frame(row.names = list.m0.mtry)
+df$RSE.Train = list.m0.train.rse
+df$RSE.Test  = list.m0.test.rse
+
+
+
 
 
 
