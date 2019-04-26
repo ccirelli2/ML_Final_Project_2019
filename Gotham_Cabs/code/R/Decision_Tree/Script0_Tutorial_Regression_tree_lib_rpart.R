@@ -23,6 +23,14 @@ library(rpart.plot)
 library(tree)
 library(ggplot2)
 
+# LOAD LIBRARIES
+library(RMySQL)
+
+# INSTANTIATE CONNECTION TO DB
+mydb <- dbConnect(RMySQL::MySQL(), user='ccirelli2', 
+                  password='Work4starr', dbname='GSU', 
+                  host = "127.0.0.1")
+
 ## CREATE DATASET_________________________________________________________________________
 setwd('/home/ccirelli2/Desktop/Repositories/ML_Final_Project_2019/Gotham_Cabs/data')
 s1.50k.nolimits        = read.csv('sample1_50k.csv')[2:12]                          #[2:12] drop datetime col. 
@@ -32,7 +40,6 @@ s4.50k.wlimits         = read.csv('sample2_wlimits_50k.csv')[2:12]
 s5.100k.wlimits        = read.csv('sample2_wlimits_100k.csv')[2:12]
 s6.250k.wlimits        = read.csv('sample2_wlimits_250k.csv')[2:12]
 
-
 # RANDOMIZE DATA__________________________________________________________________________
 s1.50k.nolimits_ran    = s1.50k.nolimits[sample(nrow(s1.50k.nolimits)),]
 s2.100k.nolimits_ran   = s2.100k.nolimits[sample(nrow(s2.100k.nolimits)),]
@@ -40,8 +47,6 @@ s3.250k.nolimits_ran   = s3.250k.nolimits[sample(nrow(s3.250k.nolimits)),]
 s4.50k.wlimits_ran     = s4.50k.wlimits[sample(nrow(s4.50k.wlimits)), ]
 s5.100k.wlimits_ran    = s5.100k.wlimits[sample(nrow(s5.100k.wlimits)), ]
 s6.250k.wlimits_ran    = s6.250k.wlimits[sample(nrow(s6.250k.wlimits)), ]
-
-
 
 # TRAIN / TEST SPLIT______________________________________________________________________
 
@@ -66,6 +71,19 @@ s4.test = s4.50k.wlimits_ran[train_nrows_50k:     nrow(s4.50k.wlimits_ran), ]
 s5.test = s5.100k.wlimits_ran[train_nrows_100k:   nrow(s5.100k.wlimits_ran), ]
 s6.test = s6.250k.wlimits_ran[train_nrows_250k:   nrow(s6.250k.wlimits_ran), ]
 
+# CRATE UNIQUE RANDOM SAMPLE DIRECTLY FROM DB_____________________________________________
+# Query 1:  All Data
+query1_alldata = dbSendQuery(mydb, 'SELECT 
+		                        *
+                            FROM GSU.ML_FinProj_GothamCab_Train
+                             WHERE speed IS NOT NULL
+                             AND duration != 0
+                             AND duration < 5000
+                             AND speed < 1000
+                             ORDER BY RAND()
+                             LIMIT 75000;')
+data.random.sample = fetch(query1_alldata, n = -1)
+s7.test = data.random.sample[,2:12]
 
 
 # MODEL1___________________________________________________________________________________
@@ -104,7 +122,7 @@ m1.test.rse
 
 
 
-# MODEL2_____________________________________________________________________________________
+# MODEL2 - CROSS VALIDATION__________________________________________________________________________
 'parms:     determine what tree you want.  options 1.) information, 2.) gini, 3.) anova.  
             only anova is permissible for regression. 
  cp:        - complexity pattern.  trees are prone to overfitting. 
@@ -172,6 +190,76 @@ print(paste('Model-2 test rse =>', m2.prune.test.rse))                  # Pre-pr
 # Try a holdout dataset to guage the error rate. 
 rpart.plot(m2.prune, type = 1, extra = 101, fallen.leaves = F)
 
+
+
+# M4 - GENERATE TRAINING & TEST ERRORS FOR OPTIMAL MODEL____________________________-
+'Method:
+        - Iterate a sequene of cp values, 
+        - generate training and test RSE 
+        - 3 Data sets:  Training, Test1, Test2 (completely new random sample)
+        - Find elbow point between train and test RSEs
+'
+
+# Create Lists to capture output values
+cp.index = c()
+list.train.rse = c()
+list.test.rse  = c()
+list.test.ran.data.rse = c()
+index_count = 1
+
+# For loop over seq of cp values
+for (i in seq(0.1, 0.005, -.005)){
+  # Train Model
+  print('------------------------------------------------------------------------------')
+  print(paste('Training model for iteration => ', round(i, 4)))
+  m0.train       =    rpart(duration ~ ., data = s6.train, method = 'anova', 
+                            control = rpart.control(cp = i, minsplit = 5, minbucket = 5, maxdepth = 10))
+  # Generate Test RSE
+  m0.residuals   =  residuals(m0.train)
+  m0.train.rse   =  sqrt((sum(m0.residuals^2) / (length(m0.residuals)-2)))
+  list.train.rse[index_count] = m0.train.rse
+  print(paste('     CP =>', round(i, 4), ' Training RSE =>', round(m0.train.rse,4)))
+  # Generate Prediction - Test Model
+  print(paste('Generating Prediction For CP => ', round(i, 4)))
+  m0.prediction = predict(m0.train, s6.test)
+  m0.test.rse   = sqrt(sum((s6.test$duration - m0.prediction)^2) / (length(s6.test$duration) -2))
+  list.test.rse[index_count] = round(m0.test.rse, 4)
+  print(paste('     CP =>', i, ' Test RSE =>', round(m0.test.rse, 4)))
+  # Generate Prediction - Completely New Test Set
+  print(paste('Generating Prediction For CP => ', round(i, 4), ' Using Completely New Test Set'))
+  m1.prediction = predict(m0.train, s7.test)
+  m1.test.rse   = sqrt(sum((s7.test$duration - m1.prediction)^2) / (length(s7.test$duration) -2))
+  list.test.ran.data.rse[index_count] = round(m1.test.rse, 4)
+  print(paste('     CP =>', round(i, 4), ' New Data Test RSE =>', round(m1.test.rse, 4)))
+  # Increate Count Index 
+  index_count = index_count + 1
+  cp.index[index_count] = round(i, 4)
+  print('------------------------------------------------------------------------------')
+}
+
+# Drop Null Value From cp.index
+cp.index = cp.index[2:41]
+length(cp.index)
+length(list.test.rse)
+
+# Create DataFrame
+df = data.frame(row.names = cp.index)
+df$train.rse = list.train.rse
+df$test.v1.rse = list.test.rse
+df$test.v2.rse = list.test.ran.data.rse
+
+# Graph Results
+p = ggplot() + 
+  geom_line(data = df, aes(x = cp.index, y = list.train.rse, color = 'Train RSE')) +
+  geom_line(data = df, aes(x = cp.index, y = list.test.rse, color = 'Test RSE DV1')) +
+  geom_line(data = df, aes(x = cp.index, y = list.test.ran.data.rse, color = 'Test RSE DV2')) +
+  xlab('Complexity Parameter Value') + 
+  ylab('RSE') 
+
+print(p+ ggtitle('Simple Decision Tree - Training vs Test RSE'))
+
+
+df
 
 
 
