@@ -22,11 +22,16 @@ from keras.layers import Dropout, Activation
 
 # FUNCTIONS________________________________________________________________
 
-def split_xy(data, xy):
+def split_xy(data, cols, xy):
+    'cols = columns to pass to x.  Must be a list'
     if xy == 'y':
         return data['duration']
+    elif xy=='x':
+        return data[cols]
     else:
-        return data.iloc[:, 2:12]
+        print('Input must be either x or y')
+
+
 
 def plot_history(history):
     acc = history.history['acc']
