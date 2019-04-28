@@ -5,7 +5,6 @@
 # Load Standard Libraries
 import pandas as pd
 import os
-import mysql.connector
 from datetime import datetime
 import matplotlib.pyplot as plt
 plt.style.use('ggplot')
@@ -64,7 +63,7 @@ l5 = tf.keras.layers.Dropout(0.25)
 
 # Build Model
 'pass to the model the layers you want to use to train it'
-model = tf.keras.Sequential([l1, l5, l0])
+model = tf.keras.Sequential([l1, l0])
 
 # Compile Model
 model.compile(loss='mean_squared_error', optimizer=tf.keras.optimizers.Adam(0.01), 
@@ -72,7 +71,7 @@ model.compile(loss='mean_squared_error', optimizer=tf.keras.optimizers.Adam(0.01
 model.summary()
 
 # Fit Model
-history = model.fit(x_train, y_train, epochs=100, verbose=False, 
+history = model.fit(x_train, y_train, epochs=5, verbose=False, 
                     validation_data=(x_test, y_test))
 
 # Measure Accuracy of Model-------------------------------------
@@ -102,35 +101,11 @@ plt.figure(figsize=(12,5))
 plt.subplot(1,2,1)
 plt.plot(len_train_loss, train_loss, 'b', label='Training Loss')
 plt.plot(len_test_loss, val_loss, 'r', label='Validation Loss')
-plt.title('Training and validation loss')
+plt.title('TRAINING & TEST RSE BY EPOCH')
 plt.legend()
 plt.show()
 
 
 
 
-
-
-
-def plot_history(history):
-    acc = history.history['acc']
-    val_acc = history.history['val_acc']
-    loss = history.history['loss']
-    val_loss = history.history['val_loss']
-    x = range(1, len(acc) + 1)
-
-    plt.figure(figsize=(12, 5))
-    plt.subplot(1, 2, 1)
-    plt.plot(x, acc, 'b', label='Training acc')
-    plt.plot(x, val_acc, 'r', label='Validation acc')
-    plt.title('Training and validation accuracy')
-    plt.legend()
-    plt.subplot(1, 2, 2)
-    plt.plot(x, loss, 'b', label='Training loss')
-    plt.plot(x, val_loss, 'r', label='Validation loss')
-    plt.title('Training and validation loss')
-    plt.legend()
-
-#plot_history(history)
-#plt.show()
 
