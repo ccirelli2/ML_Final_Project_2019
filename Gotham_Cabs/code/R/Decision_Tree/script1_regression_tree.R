@@ -138,7 +138,7 @@ m1.test.rse
 '
 # Train Model
 m2.train = rpart(duration ~ ., data = s6.train, method = 'anova', 
-                 control = rpart.control(cp = .0016, minsplit = 5, minbucket = 5, maxdepth = 10))
+                 control = rpart.control(cp = .005, minsplit = 5, minbucket = 5, maxdepth = 10))
 
 # Plot Tree
 rpart.plot(m2.train, type = 5, extra = 101, fallen.leaves = T, main = 'Regression Tree - M2')

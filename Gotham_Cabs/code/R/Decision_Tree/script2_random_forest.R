@@ -7,6 +7,19 @@
     sampsize: the number of samples to train on. The default value is 63.25% of the training set since this is the expected value of unique observations in the bootstrap sample. Lower sample sizes can reduce the training time but may introduce more bias than necessary. Increasing the sample size can increase performance but at the risk of overfitting because it introduces more variance. Typically, when tuning this parameter we stay near the 60-80% range.
     nodesize: minimum number of samples within the terminal nodes. Controls the complexity of the trees. Smaller node size allows for deeper, more complex trees and smaller node results in shallower trees. This is another bias-variance tradeoff where deeper trees introduce more variance (risk of overfitting) and shallower trees introduce more bias (risk of not fully capturing unique patters and relatonships in the data).
     maxnodes: maximum number of terminal nodes. Another way to control the complexity of the trees. More nodes equates to deeper, more complex trees and less nodes result in shallower trees.
+ Algorithm:
+  1.  Given training data set
+  2.  Select number of trees to build (ntrees)
+  3.  for i = 1 to ntrees do
+  4.  |  Generate a bootstrap sample of the original data
+  5.  |  Grow a regression tree to the bootstrapped data
+  6.  |  for each split do
+  7.  |  | Select m variables at random from all p variables
+  8.  |  | Pick the best variable/split-point among the m
+  9.  |  | Split the node into two child nodes
+  10. |  end
+  11. | Use typical tree model stopping criteria to determine when a tree is complete (but do not prune)
+  12. end
 '
 
 ## CLEAR NAMESPACE________________________________________________________________________
@@ -66,7 +79,7 @@ s6.test = s6.250k.wlimits_ran[train_nrows_250k:   nrow(s6.250k.wlimits_ran), ]
 
 # M1 - RANDOM FOREST MODEL____________________________________________________________
 t1 = Sys.time()
-m1 = randomForest(duration ~ ., data = s6.train, ntree = 50, mtry = 11)
+m1 = randomForest(duration ~ ., data = s1.train, ntree = 50, mtry = 3)
 print(Sys.time() - t1)
 
 # Get Model Data
@@ -83,6 +96,18 @@ varImpPlot(m1, main = 'Variable Importance Plot - Node Purity')
 # Get Tree With Best RSE
 m1.min.rse    = sqrt(m1$mse[which.min(m1$mse)])
 m1.min.rse
+
+
+
+
+
+
+
+
+
+
+
+
 
 # M2 -  - TRAINING / TEST SPLIT_________________________________________
 t1 = Sys.time()
@@ -109,15 +134,42 @@ which.min(m2$mse)
 sqrt(m2$mse[which.min(m2$mse)])
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # M3 - RANGER - FASTER IMPLEMENTATION RANDOM FOREST_________________________________________
-
+?randomForest
 m3 <- ranger(formula   = duration ~ ., 
-             data      = s1.train, 
-             num.trees = 50,
-             mtry      = 3)
-m3.predict = predict(m3, s1.test)
-m3.rse     = sqrt(sum((s1.test$duration - m3.predict$predictions)^2) / (length(s1.test$duration) -2))
-
+             data      = s4.train, 
+             num.trees = 100,
+             mtry      = 10)
+?ranger
+m3
+m3.predict = predict(m3, s4.test)
+m3.rse     = sqrt(sum((s4.test$duration - m3.predict$predictions)^2) / (length(s4.test$duration) -2))
+print(m3.rse)
 
 # M4    INITIAL TUNING (MTRY)______________________________________________________________
 'Optomize based on different values for mtry
@@ -125,28 +177,37 @@ m3.rse     = sqrt(sum((s1.test$duration - m3.predict$predictions)^2) / (length(s
 randomForest::tuneRF() ** Not working. 
 '
 # Create Lists to Capture Model Output
-list.m0.mtry      = c()
-list.m0.train.rse = c()
-list.m0.test.rse  = c()
+list.m0.param      = c()
+list.m0.oob.rse    = c()
+list.m0.test.rse   = c()
+m4.count           = 1
 
 # Iterate Over Different Values for MTRY
-for (i in seq(1,10)){
-  # Train Model
-  print(paste('Training model for MTRY =>', i))
-  m0 =   ranger(formula   = duration ~ ., 
-                data      = s4.train, 
-                num.trees = 500,
-                mtry      = i)
-  # Generate Train Error
-  list.m0.train.rse[i] = sqrt(m0$prediction.error)
-  print('Generating Prediction')
-  m0.predict = predict(m0, s4.test)
-  m0.test.rse     = sqrt(sum((s4.test$duration - m0.predict$predictions)^2) / (length(s4.test$duration) -2))
-  list.m0.mtry[i] = i
-  list.m0.test.rse[i]  = round(m0.test.rse,4)
-  print(paste('Model => ', i, ' RSE =>', round(m0.rse,4)))
-  print('--------------------------------------------------')
-}
+
+m4_tune_rf = function (target_parameter, seq_from, seq_to, seq_step){
+
+  for (i in seq(seq_from, seq_to, seq_step)){
+    # Train Model
+    print(paste('Training model for =>', target_parameter, '=>', i))
+    m0 =   ranger(formula   = duration ~ ., 
+                data        = s4.train, 
+                num.trees   = i,
+                mtry        = 10)
+    # Generate Train Error
+    oob.rse = sqrt(m0$prediction.error)
+    list.m0.oob.rse[m4.count]    = oob.rse
+    print(paste('OOB RSE =>', oob.rse))
+    print('Generating Prediction')
+    m0.predict = predict(m0, s4.test)
+    m0.test.rse                  = sqrt(sum((s4.test$duration - m0.predict$predictions)^2) / (length(s4.test$duration) -2))
+    list.m0.param[m4.count]      = i
+    list.m0.test.rse[m4.count]   = round(m0.test.rse,4)
+    print(paste('Model => ', i, 'Test RSE =>', round(m0.test.rse,4)))
+    print('--------------------------------------------------')}}
+    m4.count = m4.count+1
+
+m4_tune_rf('Number of Trees', 100, 500, 100)
+
 
 # Create Data frame to house results
 df = data.frame(row.names = list.m0.mtry)

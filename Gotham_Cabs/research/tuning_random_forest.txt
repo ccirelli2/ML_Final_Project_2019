@@ -1,0 +1,72 @@
+# Notes to Self About Presentation:
+1.) We should discuss why we chose to use each model.  Ex:  Regression tree as our target
+    is continous. 
+2.) Can we print a 2D tree to see the splits?
+3.) How did we do cross validation and why did it work?
+    function:  kfoldLoss(crossval(model))
+4.) Random Forest:  Looks like a mess.  It doesn't appear that we adequately trained a model
+                    and performed cross validaton or selection vs cp.   
+		    * Just copy the exact same procedures that you applied for a decision tree. 
+
+
+## Regression Trees____________________________________________________________
+
+Loss Function:
+- 1/n * Sum of (yi - ybar)^2     
+- so its the minimum of the mean of the sum of squared errors about the mean. 
+- Prone to overfitting.  Tree will continue to grow unless we put a penalty on 
+  large trees.  This is where CP comes in. 
+- Splits are determined by finding the bifurcation at the node that minimizes the MSE
+  above and below the split. You do this for each parameter. 
+- Stop at some minimum gain in the decrease in MSE. 
+
+# Complexity Parameter (CP)
+- Reference: https://newonlinecourses.science.psu.edu/stat508/lesson/11/11.8/11.8.2
+- Used to control the size of the decision tree and to select the optimal tree size. 
+- If the gain of making a split does not achieve a minimum decrease in the MSE then the model
+  stops splitting. "the tree construction does not continue unless it would decrease the overall
+  MSE by a factor of cp. 
+- Setting this to 0 would build a tree to a maximum depth. 
+
+# Terminology:
+- xerror:  cross validation error relative to the root node error
+- xstd:    
+- Root Node Error:  represented as a fraction, ex 67/105 = 0.63, is the 'base-line-error'
+           or the error that we get if we classified everything as setosa (pedal dataset). 
+- x-val Relative Error?
+
+
+
+Random Forest:
+- mtry:		Number of features available for splitting at each tree node. 
+		For regression models the default is num of features / 3. 
+ 		*Note that change this parameter would increase computational costs, but
+		also change the uniqueness of how the tree is built. 
+		*Where RF models differ is that when forming each split in a tree, the 
+		algorithm randomly selects mtry variables from a set of predictors available. 
+		Hence, at each split a different random set of variables is selected. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
