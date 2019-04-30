@@ -203,20 +203,25 @@ print(p+ ggtitle('RANDOM FOREST - TRAINING & TEST RSE'))
 
 
 
-# M3    HYPER PARAMETER SELECTION - MTY______________________________________________
+# M3    HYPER PARAMETER SELECTION - MTRY______________________________________________
+'ntrees:  optimal seems to be 200
+ mtry:    should be a range of 1 to p
+'
 
 
 # Test Number of Trees
-list.ntrees = c()
+list.nmtry = c()
 list.oob.rse = c()
 list.test.rse = c()
 Count = 1
 
 rf_num_trees = function(data.train, data.test, list.ntrees, list.oob.rse, list.test.rse, Count, i){
-  list.ntrees[Count] <<- i
+  'i = number of mtry.  Should be a range of 1-p'
+  # Update 
+  list.nmtry[Count]     <<- i
   # Train Model
-  print(paste('Training Model Using Ntrees => ', i))
-  m0 = ranger(duration ~., data = data.train, num.trees = i)
+  print(paste('Training Model Using N-MTRY => ', i))
+  m0 = ranger(duration ~., data = data.train, num.trees = 200, mtry = i)
   # Generate OOB RSE
   print('Generating OOB RSE')
   m0.oob.rse            = round(sqrt(m0$prediction.error),4)
@@ -238,22 +243,25 @@ rf_num_trees = function(data.train, data.test, list.ntrees, list.oob.rse, list.t
 }
 
 # Run over sequence
-for (i in seq(100, 400, 100)){
-  rf_num_trees(s6.250k.wlimits_ran, s1.50k.nolimits, list.ntrees, list.oob.rse, list.test.rse, Count, i)
+ncolnames = length(colnames(s1.50k.nolimits))
+
+# Iterate over number of mtry
+for (i in seq(1, ncolnames-1, 1)){
+  rf_num_trees(s6.250k.wlimits_ran, s1.50k.nolimits, list.nmtry, list.oob.rse, list.test.rse, Count, i)
 }
 
-list.ntrees = c(100,200,300,400)
+list.nmtry
+
 #Create DataFrame
-df = data.frame(row.names = list.ntrees)
+df = data.frame(row.names = list.nmtry[1:10])
 df$oob.rse     = list.oob.rse
 df$test.rse    = list.test.rse
 
-
 # Graph Results
 p = ggplot() + 
-  geom_line(data = df, aes(x = list.ntrees, y = df$oob.rse, color = 'OOB RSE')) +
-  geom_line(data = df, aes(x = list.ntrees, y = df$test.rse, color = 'Test RSE')) +
-  xlab('Number of Trees') + 
+  geom_line(data = df, aes(x = list.nmtry[1:10], y = df$oob.rse, color = 'OOB RSE')) +
+  geom_line(data = df, aes(x = list.nmtry[1:10], y = df$test.rse, color = 'Test RSE')) +
+  xlab('Number of Features') + 
   ylab('RSE') 
 
 print(p+ ggtitle('RANDOM FOREST - TRAINING & TEST RSE'))
@@ -261,6 +269,68 @@ print(p+ ggtitle('RANDOM FOREST - TRAINING & TEST RSE'))
 
 
 
+# M3    HYPER PARAMETER SELECTION - ALPHA______________________________________________
+'alpha	For "maxstat" splitrule: Significance threshold to allow splitting.
+        Default = 0.5
+'
+
+?ranger()
+# Test Number of Trees
+list.alpha = c()
+list.oob.rse = c()
+list.test.rse = c()
+Count = 1
+
+rf_num_trees = function(data.train, data.test, list.ntrees, list.oob.rse, list.test.rse, Count, i){
+  'i = number of mtry.  Should be a range of 1-p'
+  # Update 
+  list.alpha[Count]     <<- i
+  # Train Model
+  print(paste('Training Model Using Alpha => ', i))
+  m0 = ranger(duration ~., data = data.train, num.trees = 200, mtry = 10, alpha = i)
+  # Generate OOB RSE
+  print('Generating OOB RSE')
+  m0.oob.rse            = round(sqrt(m0$prediction.error),4)
+  list.oob.rse[Count]   <<- m0.oob.rse
+  print(paste('OOB RSE => ', m0.oob.rse))
+  # Generate Prediction Using New Sample Data
+  print('Generating Test Prediction')
+  m0.predict            = predict(m0, data.test)
+  # Calculate Test RSE
+  print('Generating Test RSE')
+  m0.test.rse           = round(sqrt(sum((data.test$duration - m0.predict$predictions)^2) / (length(m0.predict$predictions)-2)),4)
+  list.test.rse[Count]  <<- m0.test.rse
+  print(paste('Test RSE =>', m0.test.rse))
+  # Increase Count
+  Count                 <<- Count + 1
+  # Return Model
+  print('Model Completed.  Returning model object to user')
+  print('-----------------------------------------------------------------------------')
+}
+
+# Run over sequence
+ncolnames = length(colnames(s1.50k.nolimits))
+
+# Iterate over number of mtry
+for (i in seq(1, ncolnames-1, 1)){
+  rf_num_trees(s6.250k.wlimits_ran, s1.50k.nolimits, list.nmtry, list.oob.rse, list.test.rse, Count, i)
+}
+
+list.nmtry
+
+#Create DataFrame
+df = data.frame(row.names = list.nmtry[1:10])
+df$oob.rse     = list.oob.rse
+df$test.rse    = list.test.rse
+
+# Graph Results
+p = ggplot() + 
+  geom_line(data = df, aes(x = list.nmtry[1:10], y = df$oob.rse, color = 'OOB RSE')) +
+  geom_line(data = df, aes(x = list.nmtry[1:10], y = df$test.rse, color = 'Test RSE')) +
+  xlab('Number of Features') + 
+  ylab('RSE') 
+
+print(p+ ggtitle('RANDOM FOREST - TRAINING & TEST RSE'))
 
 
 
