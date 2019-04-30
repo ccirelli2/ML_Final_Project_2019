@@ -10,6 +10,10 @@ library(ranger)               # Faster implementation of Random Forest
 library(tree)
 library(ISLR)
 library(MASS)
+library(caret)                # library that contains the train() function
+
+## IMPORT PERSONAL FUNCTIONS_____________________________________________________________
+source('/home/ccirelli2/Desktop/Repositories/ML_Final_Project_2019/Gotham_Cabs/code/R/Decision_Tree/module0_random_forest.R')
 
 ## CREATE DATASET_________________________________________________________________________
 setwd('/home/ccirelli2/Desktop/Repositories/ML_Final_Project_2019/Gotham_Cabs/data')
@@ -66,11 +70,146 @@ s6.test = s6.250k.wlimits_ran[train_nrows_250k:   nrow(s6.250k.wlimits_ran), ]
  mtry:      For regression it is p / 3
  '
 
+# RANGER ______________________________________________________________________________________
+'ranger(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
+  importance = "none", write.forest = TRUE, probability = FALSE,
+  min.node.size = NULL, replace = TRUE, sample.fraction = ifelse(replace,
+  1, 0.632), case.weights = NULL, class.weights = NULL, splitrule = NULL,
+  num.random.splits = 1, alpha = 0.5, minprop = 0.1,
+  split.select.weights = NULL, always.split.variables = NULL,
+  respect.unordered.factors = NULL, scale.permutation.importance = FALSE,
+  keep.inbag = FALSE, holdout = FALSE, quantreg = FALSE,
+  num.threads = NULL, save.memory = FALSE, verbose = TRUE, seed = NULL,
+  dependent.variable.name = NULL, status.variable.name = NULL,
+  classification = NULL)
+'
 
-# M1  TRAIN BASE MODEL_________________________________________________________________________
+# TRAIN()______________________________________________________________________________________
+'Fit Predictive Models over Different Tuning Parameters
 
-?randomForest()
-m1 = randomForest()
+Description
+
+This function sets up a grid of tuning parameters for a number of classification and regression routines, fits each model and calculates a resampling based performance measure.
+
+Usage
+
+train(x, ...)
+
+## Default S3 method:
+train(x, y, method = "rf", preProcess = NULL, ...,
+  weights = NULL, metric = ifelse(is.factor(y), "Accuracy", "RMSE"),
+  maximize = ifelse(metric %in% c("RMSE", "logLoss", "MAE"), FALSE, TRUE),
+  trControl = trainControl(), tuneGrid = NULL,
+  tuneLength = ifelse(trControl$method == "none", 1, 3))
+'
+
+
+# COMPARE MODELS_________________________________________________________________________________
+
+# Train Base Model with randomForest (Check run-time & rse)
+t1     = Sys.time()
+m.01     = train(duration ~ ., data=s1.train, model='rf', tuneLength = 5)
+m.01.rse = sqrt(m.01$mse)    
+m.01.rse
+print(paste('Random Forest Run Time',Sys.time() - t1))
+
+
+
+# Train Base Model with Ranger (Check run-time & rse)
+t1     = Sys.time()
+m.02     = ranger(duration ~ ., data=s1.train, num.trees = 50)
+m.02.rse = sqrt(m.02$prediction.error)
+m.02.rse
+print(paste('Ranger Run Time', Sys.time() - t1))
+
+# Results
+'Run-time:     randomForest takes 23 seconds versus rangers 0.6 seconds 
+ RSE:          random forest 129.7 vs ranger 126.6
+'
+
+# M1    TRAIN BASE MODEL WITH RANGER______________________________________________________________
+'Notes:              Since RF includes bagging it has a natural cross validation
+ write.forest        Save ranger.forest object, required for prediction. Set to FALSE to reduce memory usage if no prediction intended 
+ prediction.error	   Overall out of bag prediction error. For classification this is the fraction of missclassified samples, 
+                     for probability estimation the Brier score, for regression the mean squared error and for survival one 
+                     minus Harrells C-index.
+'
+m1 = ranger(duration ~., data = s6.250k.wlimits_ran, num.trees = 50, write.forest = T)
+# Out of Bag CV RSE
+m1.oob.rse = sqrt(m1$prediction.error)
+m1.oob.rse
+# Test RSE Using Foreign Datase
+m1.predict = predict(m1, s3.250k.nolimits)
+m1.test.rse = sqrt(sum((s3.250k.nolimits$duration - m1.predict$predictions)^2) / (length(m1.predict$predictions)-2))
+m1.test.rse
+
+
+# M2    HYPER PARAMETER SELECTION - HOW WILL THE RESULTS REACT?
+'http://www.rpubs.com/Mentors_Ubiqum/tunegrid_tunelength
+'
+
+# Test Number of Trees
+list.ntrees = c()
+list.oob.rse = c()
+list.test.rse = c()
+Count = 1
+list.oob.rse
+list.test.rse
+
+rf_num_trees = function(data.train, data.test, list.ntrees, list.oob.rse, list.test.rse, Count, i){
+  # Train Model
+  print(paste('Training Model Using Ntrees => ', i))
+  m0 = ranger(duration ~., data = data.train, num.trees = i)
+  list.ntrees[Count] = i
+  # Generate OOB RSE
+  print('Generating OOB RSE')
+  m0.oob.rse            = sqrt(m0$prediction.error)
+  list.oob.rse[Count]   <<- m0.oob.rse
+  print(paste('OOB RSE => ', m0.oob.rse))
+  # Generate Prediction Using New Sample Data
+  print('Generating Test Prediction')
+  m0.predict            = predict(m0, data.test)
+  # Calculate Test RSE
+  print('Generating Test RSE')
+  m0.test.rse           = sqrt(sum((data.test$duration - m0.predict$predictions)^2) / (length(m0.predict$predictions)-2))
+  list.test.rse[Count]  <<- m0.test.rse
+  print(paste('Test RSE =>', m0.test.rse))
+  # Increase Count
+  Count                 <<- Count + 1
+  # Return Model
+  print('Model Completed.  Returning model object to user')
+  print('-----------------------------------------------------------------------------')
+  }
+
+# Run over sequence
+for (i in seq(100, 500, 100)){
+  rf_num_trees(s6.250k.wlimits_ran, s3.250k.nolimits_ran, list.ntrees, list.oob.rse, list.test.rse, Count, i)
+}
+
+
+
+#Create DataFrame
+df = data.frame(row.names = cp.index)
+df$train.rse = list.train.rse
+df$test.v1.rse = list.test.rse
+df$test.v2.rse = list.test.ran.data.rse
+
+# Graph Results
+p = ggplot() + 
+  geom_line(data = df, aes(x = cp.index, y = list.train.rse, color = 'Train RSE')) +
+  geom_line(data = df, aes(x = cp.index, y = list.test.rse, color = 'Test RSE DV1')) +
+  geom_line(data = df, aes(x = cp.index, y = list.test.ran.data.rse, color = 'Test RSE DV2')) +
+  xlab('Complexity Parameter Value') + 
+  ylab('RSE') 
+
+print(p+ ggtitle('Simple Decision Tree - Training vs Test RSE'))
+
+
+
+
+
+
+
 
 
 
