@@ -14,7 +14,7 @@ rf_num_trees = function(data.train, data.test, ntrees.from, ntrees.to, ntrees.st
   
   for (i in seq(ntrees.from, ntrees.to, ntrees.step)){
     # Train Model
-    print('Training Model')
+    print(paste('Training Model Using Ntrees => ', i))
     m0 = ranger(duration ~., data = data.train, num.trees = i)
     # Generate OOB RSE
     print('Generating OOB RSE')
@@ -31,11 +31,9 @@ rf_num_trees = function(data.train, data.test, ntrees.from, ntrees.to, ntrees.st
     Count                 <<- Count + 1
     # Return Model
     print('Model Completed.  Returning model object to user')
+    print('-----------------------------------------------------------------------------')
     return(m0)
   }
 }
   
   
-  return(m0)
-}
-
