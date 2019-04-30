@@ -144,7 +144,7 @@ m1.test.rse = sqrt(sum((s3.250k.nolimits$duration - m1.predict$predictions)^2) /
 m1.test.rse
 
 
-# M2    HYPER PARAMETER SELECTION - HOW WILL THE RESULTS REACT?
+# M2    HYPER PARAMETER SELECTION - NUBMER OF TREES____________________________________________________
 'http://www.rpubs.com/Mentors_Ubiqum/tunegrid_tunelength
 '
 
@@ -153,17 +153,15 @@ list.ntrees = c()
 list.oob.rse = c()
 list.test.rse = c()
 Count = 1
-list.oob.rse
-list.test.rse
 
 rf_num_trees = function(data.train, data.test, list.ntrees, list.oob.rse, list.test.rse, Count, i){
+  list.ntrees[Count] <<- i
   # Train Model
   print(paste('Training Model Using Ntrees => ', i))
   m0 = ranger(duration ~., data = data.train, num.trees = i)
-  list.ntrees[Count] = i
   # Generate OOB RSE
   print('Generating OOB RSE')
-  m0.oob.rse            = sqrt(m0$prediction.error)
+  m0.oob.rse            = round(sqrt(m0$prediction.error),4)
   list.oob.rse[Count]   <<- m0.oob.rse
   print(paste('OOB RSE => ', m0.oob.rse))
   # Generate Prediction Using New Sample Data
@@ -171,7 +169,7 @@ rf_num_trees = function(data.train, data.test, list.ntrees, list.oob.rse, list.t
   m0.predict            = predict(m0, data.test)
   # Calculate Test RSE
   print('Generating Test RSE')
-  m0.test.rse           = sqrt(sum((data.test$duration - m0.predict$predictions)^2) / (length(m0.predict$predictions)-2))
+  m0.test.rse           = round(sqrt(sum((data.test$duration - m0.predict$predictions)^2) / (length(m0.predict$predictions)-2)),4)
   list.test.rse[Count]  <<- m0.test.rse
   print(paste('Test RSE =>', m0.test.rse))
   # Increase Count
@@ -182,35 +180,83 @@ rf_num_trees = function(data.train, data.test, list.ntrees, list.oob.rse, list.t
   }
 
 # Run over sequence
-for (i in seq(100, 500, 100)){
-  rf_num_trees(s6.250k.wlimits_ran, s3.250k.nolimits_ran, list.ntrees, list.oob.rse, list.test.rse, Count, i)
+for (i in seq(100, 400, 100)){
+  rf_num_trees(s6.250k.wlimits_ran, s1.50k.nolimits, list.ntrees, list.oob.rse, list.test.rse, Count, i)
 }
 
-
-
+list.ntrees = c(100,200,300,400)
 #Create DataFrame
-df = data.frame(row.names = cp.index)
-df$train.rse = list.train.rse
-df$test.v1.rse = list.test.rse
-df$test.v2.rse = list.test.ran.data.rse
+df = data.frame(row.names = list.ntrees)
+df$oob.rse     = list.oob.rse
+df$test.rse    = list.test.rse
+
 
 # Graph Results
 p = ggplot() + 
-  geom_line(data = df, aes(x = cp.index, y = list.train.rse, color = 'Train RSE')) +
-  geom_line(data = df, aes(x = cp.index, y = list.test.rse, color = 'Test RSE DV1')) +
-  geom_line(data = df, aes(x = cp.index, y = list.test.ran.data.rse, color = 'Test RSE DV2')) +
-  xlab('Complexity Parameter Value') + 
+  geom_line(data = df, aes(x = list.ntrees, y = df$oob.rse, color = 'OOB RSE')) +
+  geom_line(data = df, aes(x = list.ntrees, y = df$test.rse, color = 'Test RSE')) +
+  xlab('Number of Trees') + 
   ylab('RSE') 
 
-print(p+ ggtitle('Simple Decision Tree - Training vs Test RSE'))
+print(p+ ggtitle('RANDOM FOREST - TRAINING & TEST RSE'))
 
 
 
 
+# M3    HYPER PARAMETER SELECTION - MTY______________________________________________
 
 
+# Test Number of Trees
+list.ntrees = c()
+list.oob.rse = c()
+list.test.rse = c()
+Count = 1
+
+rf_num_trees = function(data.train, data.test, list.ntrees, list.oob.rse, list.test.rse, Count, i){
+  list.ntrees[Count] <<- i
+  # Train Model
+  print(paste('Training Model Using Ntrees => ', i))
+  m0 = ranger(duration ~., data = data.train, num.trees = i)
+  # Generate OOB RSE
+  print('Generating OOB RSE')
+  m0.oob.rse            = round(sqrt(m0$prediction.error),4)
+  list.oob.rse[Count]   <<- m0.oob.rse
+  print(paste('OOB RSE => ', m0.oob.rse))
+  # Generate Prediction Using New Sample Data
+  print('Generating Test Prediction')
+  m0.predict            = predict(m0, data.test)
+  # Calculate Test RSE
+  print('Generating Test RSE')
+  m0.test.rse           = round(sqrt(sum((data.test$duration - m0.predict$predictions)^2) / (length(m0.predict$predictions)-2)),4)
+  list.test.rse[Count]  <<- m0.test.rse
+  print(paste('Test RSE =>', m0.test.rse))
+  # Increase Count
+  Count                 <<- Count + 1
+  # Return Model
+  print('Model Completed.  Returning model object to user')
+  print('-----------------------------------------------------------------------------')
+}
+
+# Run over sequence
+for (i in seq(100, 400, 100)){
+  rf_num_trees(s6.250k.wlimits_ran, s1.50k.nolimits, list.ntrees, list.oob.rse, list.test.rse, Count, i)
+}
+
+list.ntrees = c(100,200,300,400)
+#Create DataFrame
+df = data.frame(row.names = list.ntrees)
+df$oob.rse     = list.oob.rse
+df$test.rse    = list.test.rse
 
 
+# Graph Results
+p = ggplot() + 
+  geom_line(data = df, aes(x = list.ntrees, y = df$oob.rse, color = 'OOB RSE')) +
+  geom_line(data = df, aes(x = list.ntrees, y = df$test.rse, color = 'Test RSE')) +
+  xlab('Number of Trees') + 
+  ylab('RSE') 
+
+print(p+ ggtitle('RANDOM FOREST - TRAINING & TEST RSE'))
 
 
 
