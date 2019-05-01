@@ -40,12 +40,20 @@ library(caret)  # used for parameter tuning
 
 ## CREATE DATASET_________________________________________________________________________
 setwd('/home/ccirelli2/Desktop/Repositories/ML_Final_Project_2019/Gotham_Cabs/data')
-s1.50k.nolimits        = read.csv('sample1_50k.csv')[2:12]                          #[2:12] drop datetime col. 
+s1.50k.nolimits        = read.csv('sample1_50k.csv')[2:12]                          
 s2.100k.nolimits       = read.csv('sample1_100k.csv')[2:12]
 s3.250k.nolimits       = read.csv('sample1_250k.csv')[2:12]
 s4.50k.wlimits         = read.csv('sample2_wlimits_50k.csv')[2:12]
 s5.100k.wlimits        = read.csv('sample2_wlimits_100k.csv')[2:12]
 s6.250k.wlimits        = read.csv('sample2_wlimits_250k.csv')[2:12]
+
+## DROP SPEED_____________________________________________________________________________
+s1.50k.nolimits$speed  <- NULL                          
+s2.100k.nolimits$speed <- NULL
+s3.250k.nolimits$speed <- NULL
+s4.50k.wlimits$speed   <- NULL
+s5.100k.wlimits$speed  <- NULL
+s6.250k.wlimits$speed  <- NULL
 
 # SET SEED FOR ENTIRE CODE________________________________________________________________
 set.seed(123)                                                                 
@@ -80,6 +88,7 @@ s5.test = s3.250k.nolimits_ran[train_nrows_250k: length(s3.250k.nolimits_ran), ]
 s2.test = s4.50k.wlimits_ran[  train_nrows_50k:   length(s1.50k.nolimits_ran), ]
 s4.test = s5.100k.wlimits_ran[ train_nrows_100k: length(s2.100k.nolimits_ran) ,]
 s6.test = s6.250k.wlimits_ran[ train_nrows_250k: length(s2.100k.nolimits_ran) ,]
+
 
 
 ## M1:   Duration vs Distance_______________________________________________________________________________________
@@ -140,38 +149,9 @@ ggplot(df, aes(y = df$test.rse, x = test_set_names, fill = test_set_names)) + ge
   scale_y_continuous(breaks = pretty(df$test.rse, n = 5))
 
 
-df
 
 
 
-
-## M2:  Duration vs Speed____________________________________________________________________________________________
-
-m2.lr            = lm(duration ~ speed, data = s1.train)
-m2.summary       = summary(m2.lr)
-m2.summary
-m2.train.r2      = m2.summary$r.squared
-m2.train.ss      = sum(m2.summary$residuals^2) 
-m2.train.mse     = mean(m2.summary$residuals^2) 
-m2.lr.predict    = predict(m2.lr, s1.test)
-m2.ss            = sum((s1.test$duration - m2.lr.predict)^2) # Calculate Square Root of Residual Sum of Squared Errors. 
-m2.mse           = mean((s1.test$duration - m2.lr.predict)^2)
-
-# Train Model - s1-3
-m2.training.sets <- list(s1.train, s2.train, s3.train, s4.train, s5.train, s6.train)
-m2.set.names     <- c('s1.train', 's2.train', 's3.train', 's4.train', 's5.train', 's6.train')
-m2.results    <- data.frame('Index' = 1)
-Count          = 0
-
-for (i in m2.training.sets){
-  lr = lm(duration ~ speed, data = i)
-  lr.summary = summary(lr)
-  r.squared  = round(lr.summary$r.squared,4)
-  Count = Count + 1
-  m2.results[Count] <- r.squared
-}
-setwd('/home/ccirelli2/Desktop/Repositories/ML_Final_Project_2019/Gotham_Cabs/output')
-write.csv(m2.results, 'm2_lr_r2_datasets_1to6_04202019.csv')
 
 
 

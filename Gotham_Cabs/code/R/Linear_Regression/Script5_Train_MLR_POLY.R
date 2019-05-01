@@ -20,6 +20,15 @@ s4.50k.wlimits         = read.csv('sample2_wlimits_50k.csv')[2:12]
 s5.100k.wlimits        = read.csv('sample2_wlimits_100k.csv')[2:12]
 s6.250k.wlimits        = read.csv('sample2_wlimits_250k.csv')[2:12]
 
+## DROP SPEED_____________________________________________________________________________
+s1.50k.nolimits$speed  <- NULL                          
+s2.100k.nolimits$speed <- NULL
+s3.250k.nolimits$speed <- NULL
+s4.50k.wlimits$speed   <- NULL
+s5.100k.wlimits$speed  <- NULL
+s6.250k.wlimits$speed  <- NULL
+
+
 # SET SEED FOR ENTIRE CODE________________________________________________________________
 set.seed(123)                                                                 
 
@@ -63,7 +72,7 @@ mlr.poly <- function(data_train, data_test, polynomial, objective) {
   # Train Model  
   m1.mlr.poly = lm(duration ~ poly(pickup_x, pickup_y, dropoff_x, dropoff_y, 
                                    weekday, hour_,  day_,distance, 
-                                   month_, speed, 
+                                   month_,
                                    degree = polynomial, raw = T), data = data_train)
   # Return Summary Stats
   if (objective == 'train'){
@@ -115,37 +124,6 @@ p = ggplot() +
   ylab('RSE') 
 
 print(p+ ggtitle('Plot Test & Training Polynomials'))
-
-
-
-
-
-# Aggregate Results - Create Graph
-'Below results were typed out using the above functions'
-num_poly     = c(1,2,3,4)
-d1_rse_train = c(280, 196, 149, 113)
-d1_rse_test  = c(737, 766, 801, 3438)
-d2_rse_train = c(246, 153, 106, 81)
-d2_rse_test  = c(247, 156, 262, 706)
-d3_rse_test  = c(733, 781, 19394, 1779816)
-
-# Dataset 1
-d1_results <- matrix(c(280, 196, 149, 113, 737, 766, 801, 3438), ncol=2, byrow = TRUE)
-colnames(d1_results) = c('d1_train', 'd1_test')
-rownames(d1_results) = c('p1', 'p2', 'p3', 'p4')
-d1_plot = barplot(d1_results, beside = T, legend = rownames(training_results), panel.first = grid(),
-                  main = 'MLR RESULTS - POLYNOMIALS 1-4', 
-                  ylab = 'TRAIN - RSE', 
-                  xlab = 'DATASETS')
-
-# Dataset 2
-d2_results <- matrix(c(246, 153, 106, 81, 733, 781, 1500, 2000), ncol = 2, byrow = TRUE)
-colnames(d2_results) = c('d2_train', 'd2_test')
-rownames(d2_results) = c('p1', 'p2', 'p3', 'p4')
-d2_plot = barplot(d2_results, beside = T, legend = rownames(d2_results), panel.first = grid(),
-                  main = 'MLR RESULTS - POLYNOMIALS 1-4', 
-                  ylab = 'TRAIN - RSE', 
-                  xlab = 'DATASETS')
 
 
 

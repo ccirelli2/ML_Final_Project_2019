@@ -108,7 +108,7 @@ train(x, y, method = "rf", preProcess = NULL, ...,
 
 # Train Base Model with randomForest (Check run-time & rse)
 t1     = Sys.time()
-m.01     = train(duration ~ ., data=s1.train, model='rf', tuneLength = 5)
+m.01     = randomForest(duration ~ ., data=s1.train, ntrees = 10, tuneLength = 5)
 m.01.rse = sqrt(m.01$mse)    
 m.01.rse
 print(paste('Random Forest Run Time',Sys.time() - t1))
@@ -308,9 +308,10 @@ rf_num_trees = function(data.train, data.test, list.ntrees, list.oob.rse, list.t
 }
 
 # Iterate over number of mtry
-for (i in seq(0.5, 0.01, -0.1)){
+for (i in seq(0.5, 0.01, -0.05)){
   rf_num_trees(s6.250k.wlimits_ran, s1.50k.nolimits, list.nmtry, list.oob.rse, list.test.rse, Count, i)
 }
+
 
 
 #Create DataFrame
@@ -320,19 +321,78 @@ df$test.rse    = list.test.rse
 list.oob.rse
 # Graph Results
 p = ggplot() + 
-  geom_line(data = df, aes(x = list.alpha, y = df$oob.rse, color = 'OOB RSE')) +
+#  geom_line(data = df, aes(x = list.alpha, y = df$oob.rse, color = 'OOB RSE')) +
   geom_line(data = df, aes(x = list.alpha, y = df$test.rse, color = 'Test RSE')) +
   xlab('ALPHA') + 
   ylab('RSE') 
 
-print(p+ ggtitle('RANDOM FOREST - TRAINING & TEST RSE'))
+print(p+ ggtitle('RANDOM FOREST - ALPHA - TEST RSE'))
+
+
+# Try using trian and passing the cp parameter there. Or just train a different model and set the values to 200 trees w/ mty = 10
 
 
 
 
+# M3    HYPER PARAMETER SELECTION - MIN NODE SZE______________________________________________
+'min.node.size =       This is the minimum node size, in the example above the minimum node size is 10. This parameter 
+                       implicitly sets the depth of your trees. Minimum size of terminal nodes. Setting this number 
+                       larger causes smaller trees to be grown (and thus take less time). Note that the default values are different 
+                       for classification (1) and regression (5).
+'
+# Test Number of Trees
+list.node.size = c()
+list.oob.rse = c()
+list.test.rse = c()
+Count = 1
+
+rf_num_trees = function(data.train, data.test, list.ntrees, list.oob.rse, list.test.rse, Count, i){
+  'i = value for alpha.'
+  # Update 
+  list.node.size[Count]     <<- i
+  # Train Model
+  print(paste('Training Model Using Min.Node.Size => ', i))
+  m0 = ranger(duration ~., data = data.train, num.trees = 200, mtry = 10, alpha = 0.1, min.node.size = i)
+  # Generate OOB RSE
+  print('Generating OOB RSE')
+  m0.oob.rse            = round(sqrt(m0$prediction.error),4)
+  list.oob.rse[Count]   <<- m0.oob.rse
+  print(paste('OOB RSE => ', m0.oob.rse))
+  # Generate Prediction Using New Sample Data
+  print('Generating Test Prediction')
+  m0.predict            = predict(m0, data.test)
+  # Calculate Test RSE
+  print('Generating Test RSE')
+  m0.test.rse           = round(sqrt(sum((data.test$duration - m0.predict$predictions)^2) / (length(m0.predict$predictions)-2)),4)
+  list.test.rse[Count]  <<- m0.test.rse
+  print(paste('Test RSE =>', m0.test.rse))
+  # Increase Count
+  Count                 <<- Count + 1
+  # Return Model
+  print('Model Completed.  Returning model object to user')
+  print('-----------------------------------------------------------------------------')
+}
+
+# Iterate over number of mtry
+for (i in seq(1, 10, 1)){
+  rf_num_trees(s6.250k.wlimits_ran, s1.50k.nolimits, list.nmtry, list.oob.rse, list.test.rse, Count, i)
+}
 
 
+#Create DataFrame
+df = data.frame(row.names = list.node.size)
+df$oob.rse     = list.oob.rse
+df$test.rse    = list.test.rse
+list.oob.rse
 
+# Graph Results
+p = ggplot() + 
+#  geom_line(data = df, aes(x = list.node.size, y = df$oob.rse, color = 'OOB RSE')) +
+  geom_line(data = df, aes(x = list.node.size, y = df$test.rse, color = 'Test RSE')) +
+  xlab('MIN.NODE.SIZE') + 
+  ylab('RSE') 
+
+print(p+ ggtitle('RANDOM FOREST - MIN.NODE.SIZE - TEST RSE'))
 
 
 

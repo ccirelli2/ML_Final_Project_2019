@@ -28,6 +28,14 @@ s4.50k.wlimits         = read.csv('sample2_wlimits_50k.csv')[2:12]
 s5.100k.wlimits        = read.csv('sample2_wlimits_100k.csv')[2:12]
 s6.250k.wlimits        = read.csv('sample2_wlimits_250k.csv')[2:12]
 
+## DROP SPEED_____________________________________________________________________________
+s1.50k.nolimits$speed  <- NULL                          
+s2.100k.nolimits$speed <- NULL
+s3.250k.nolimits$speed <- NULL
+s4.50k.wlimits$speed   <- NULL
+s5.100k.wlimits$speed  <- NULL
+s6.250k.wlimits$speed  <- NULL
+
 # SET SEED FOR ENTIRE CODE________________________________________________________________
 set.seed(123)                                                                 
 
@@ -63,22 +71,22 @@ s6.test = s6.250k.wlimits_ran[ train_nrows_250k:  nrow(s6.250k.wlimits_ran), ]
 
 # Separate Target & Feature Values
 s1_y = s1.50k.nolimits_ran$duration
-s1_x = as.matrix(s1.50k.nolimits_ran[,2:11])
+s1_x = as.matrix(s1.50k.nolimits_ran[,2:10])
 
 s2_y = s2.100k.nolimits_ran$duration
-s2_x = as.matrix(s2.100k.nolimits_ran[,2:11])
+s2_x = as.matrix(s2.100k.nolimits_ran[,2:10])
 
 s3_y = s3.250k.nolimits_ran$duration
-s3_x = as.matrix(s3.250k.nolimits_ran[,2:11])
+s3_x = as.matrix(s3.250k.nolimits_ran[,2:10])
 
 s4_y = s4.50k.wlimits_ran$duration
-s4_x = as.matrix(s4.50k.wlimits_ran[,2:11])
+s4_x = as.matrix(s4.50k.wlimits_ran[,2:10])
 
 s5_y = s5.100k.wlimits_ran$duration
-s5_x = as.matrix(s5.100k.wlimits_ran[,2:11])
+s5_x = as.matrix(s5.100k.wlimits_ran[,2:10])
 
 s6_y = s6.250k.wlimits_ran$duration
-s6_x = as.matrix(s6.250k.wlimits_ran[,2:11])
+s6_x = as.matrix(s6.250k.wlimits_ran[,2:10])
 
 # Generate Grid Possible Values Lambda
 grid = 10^seq(from = 10, to = -2, length = 100)                 #length = desired length of sequence
@@ -101,8 +109,7 @@ for (i in seq(1,length(m1.ridge$lambda))){
 
 # Plot Sum of Squared Coefficients For Each Value of Lambda
 df$sumcoeff = list_sum_ceoffs
-ggplot(data = df, aes(x = seq(1,100), y = df$sumcoeff)) + geom_line() + ggtitle('Ridge - Sum of Squared Coefficeints For Each Lambda')
-
+ggplot(data = df, aes(x = seq(1,100), y = df$sumcoeff)) + geom_line() + ggtitle('Ridge - Sum of Squared Coefficeints For Each Lambda') 
 
 
 
@@ -123,9 +130,10 @@ for (i in seq(1,4)){
   Y = Y.datasets[[i]]
   # Train Model Using CV
   print('Training CV Model')
-  m_cv = cv.glmnet(X, Y, alpha = 0, lambda = grid, standardize = TRUE, nfolds = 10)
+  m_cv = cv.glmnet(X, Y, alpha = 1, lambda = grid, standardize = TRUE, nfolds = 10)
   # Get Best Lambda
   cv_lambda = m_cv$lambda.min
+  print(paste('Best lambda =>', cv_lambda))
   # Fit Model w/ Best Lambda
   print('Fit Model w/ Best Lambda')
   m_optimal <- glmnet(X, Y, alpha = 0, lambda = cv_lambda, standardize = TRUE)
@@ -135,13 +143,14 @@ for (i in seq(1,4)){
   # Calculate RSE
   print('Calculate RSE')
   model_cv_rse = sqrt(sum((Y - y_hat_cv)^2) / (length(Y) - 2))
-  print(paste('Model ', i, 'RSE =>', model_cv_rse))
+  print(paste('Model ', i, ' TEST RSE =>', model_cv_rse))
   # Append RSE Values To List
   rse.test[i] = round(model_cv_rse,0)
   print(paste('Iteration', i, 'completed'))
+  print('--------------------------------------------------------------------------')
 }
 
-
+?cv.glmnet
 
 # Create DataFrame
 df = data.frame(row.names = names.datasets)
@@ -151,8 +160,7 @@ df$ridge.rse = rse.test
 # Generate a Plot for Train & Test Points
 ggplot(df, aes(y = df$ridge.rse, x = names.datasets, fill = names.datasets)) + geom_bar(stat = 'identity') + 
   ggtitle('Multilinear Lasso Regression - 4 Datasets - RSE') + 
-  scale_y_continuous(breaks = pretty(df$ridge.rse, n = 5))
-df
+  scale_y_continuous(breaks = pretty(df$ridge.rse, n = 5)) + xlab('Datasets') + ylab('TEST RSE')
 
 
 
