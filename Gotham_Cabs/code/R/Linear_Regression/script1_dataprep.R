@@ -1,3 +1,4 @@
+
 ## CREATE DATASET_________________________________________________________________________
 setwd('/home/ccirelli2/Desktop/Repositories/ML_Final_Project_2019/Gotham_Cabs/data')
 s1.50k.nolimits        = read.csv('sample1_50k.csv')[2:12]                          

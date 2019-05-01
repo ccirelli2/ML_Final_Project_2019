@@ -27,6 +27,14 @@ s4.50k.wlimits         = read.csv('sample2_wlimits_50k.csv')[2:12]
 s5.100k.wlimits        = read.csv('sample2_wlimits_100k.csv')[2:12]
 s6.250k.wlimits        = read.csv('sample2_wlimits_250k.csv')[2:12]
 
+## DROP SPEED_____________________________________________________________________________
+s1.50k.nolimits$speed  <- NULL                          
+s2.100k.nolimits$speed <- NULL
+s3.250k.nolimits$speed <- NULL
+s4.50k.wlimits$speed   <- NULL
+s5.100k.wlimits$speed  <- NULL
+s6.250k.wlimits$speed  <- NULL
+
 # SET SEED FOR ENTIRE CODE________________________________________________________________
 set.seed(123)                                                                 
 
@@ -46,12 +54,14 @@ train.control = trainControl(method = 'cv', number = 10)
 
 # FORWARD SELECTION ----------------------------------------------------------------------
 m6.forward = train(duration ~ ., data = s6.250k.wlimits_ran, 
-                   method = 'leapForward', 
-                   tuneGrid = data.frame(nvmax = 2:11), 
+                   method = 'leapBackward', 
+                   tuneGrid = data.frame(nvmax = 2:9), 
                    trControl = train.control)
+print('hello world')
 # Get Results
 m6.summary = summary(m6.forward$finalModel)     
 m6.forward$bestTune
+sqrt(m6.summary$rss/length(s6.250k.wlimits_ran$duration))
 
 # Plot Results RMSE vs Number of Features
 plot(m6.forward$results$RMSE, main = 'MLR - Forward Selection - RMSE', xlab = 'Number of Features')
@@ -60,8 +70,8 @@ plot(m6.forward$results$RMSE, main = 'MLR - Forward Selection - RMSE', xlab = 'N
 # BACKWARD SELECTION----------------------------------------------------------------------
 
 m7.backward = train(duration ~ ., data = s6.250k.wlimits_ran, 
-                    method = 'leapBackward', 
-                    tuneGrid = data.frame(nvmax = 1:11), 
+                    method = 'leapForward', 
+                    tuneGrid = data.frame(nvmax = 1:9), 
                     trControl = train.control)
 m7.backward
 m7.backward$results
@@ -90,7 +100,7 @@ model_opt <- function(dataset, opt_method, num_param, cv_grid, result2return){
   finalModel         Aa fit object using the best parameters'
   # Train Model
   m0 = train(duration ~ dataset$pickup_x, dataset$pickup_y, dataset$dropoff_x, dataset$dropoff_y, 
-             dataset$weekday, dataset$hour_, dataset$day_, dataset$distance, dataset$month_, dataset$speed,
+             dataset$weekday, dataset$hour_, dataset$day_, dataset$distance, dataset$month_, 
              data      = dataset, 
              method    = opt_method,                                   # Step selection
              tuneGrid  = data.frame(nvmax = 1 : num_param),            # Number of features to consider in the model
@@ -111,10 +121,10 @@ model_opt <- function(dataset, opt_method, num_param, cv_grid, result2return){
 }
 
 
-m0.output = model_opt(s4.50k.wlimits_ran, 'leapBackward', 11, train.control, 'bestTune')
+m0.output = model_opt(s4.50k.wlimits_ran, 'leapForward', 9, train.control, 'bestTune')
 
 
-param_index = seq(from = 1, to = 11, by = 1)
+param_index = seq(from = 1, to = 9, by = 1)
 m0.output$RMSE
 
 plot(m0.output$RMSE, type = 'o', names.arg = param_index, main = 'FORKWARD SELECTION - RMSE FOR NUM OF PARAMETERS', 

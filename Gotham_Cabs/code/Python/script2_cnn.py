@@ -34,7 +34,7 @@ s6_250k_wl = pd.read_csv(data_dir + '/' + 'sample2_wlimits_250k.csv')
 
 # Define Columns TO use in Function
 cols     = ['pickup_x', 'pickup_y', 'dropoff_x', 'dropoff_y', 'weekday', 
-            'hour_', 'day_', 'distance', 'month_', 'speed']
+            'hour_', 'day_', 'distance', 'month_']
 x = s6_250k_wl[cols]
 y = s6_250k_wl['duration']
 
@@ -55,15 +55,16 @@ num_features = len(x.columns)
 # Create Layers
 'Intention is to try diff combinations of these layers'
 l0 = tf.keras.layers.Dense(units=1, input_shape=[num_features], activation='relu')
-l1 = tf.keras.layers.Dense(units=10, input_shape=[num_features], activation='relu')
+l1 = tf.keras.layers.Dense(units=9, input_shape=[num_features], activation='relu')
 l2 = tf.keras.layers.Dense(units=5, input_shape=[num_features], activation='relu')
 l3 = tf.keras.layers.Dense(units=1, input_shape=[num_features], activation='sigmoid')
-l4 = tf.keras.layers.Dense(units=30, input_shape=[num_features], activation='relu')
+l4 = tf.keras.layers.Dense(units=18, input_shape=[num_features], activation='relu')
 l5 = tf.keras.layers.Dropout(0.25)
+l6 = tf.keras.layers.Dense(units=36, input_shape=[num_features], activation='relu')
 
 # Build Model
 'pass to the model the layers you want to use to train it'
-model = tf.keras.Sequential([l1, l0])
+model = tf.keras.Sequential([l6, l4, l1, l3])
 
 # Compile Model
 model.compile(loss='mean_squared_error', optimizer=tf.keras.optimizers.Adam(0.01), 

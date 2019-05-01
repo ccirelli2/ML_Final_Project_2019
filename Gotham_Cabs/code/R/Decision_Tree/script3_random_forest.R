@@ -24,6 +24,13 @@ s4.50k.wlimits         = read.csv('sample2_wlimits_50k.csv')[2:12]
 s5.100k.wlimits        = read.csv('sample2_wlimits_100k.csv')[2:12]
 s6.250k.wlimits        = read.csv('sample2_wlimits_250k.csv')[2:12]
 
+## DROP SPEED_____________________________________________________________________________
+s1.50k.nolimits$speed  <- NULL                          
+s2.100k.nolimits$speed <- NULL
+s3.250k.nolimits$speed <- NULL
+s4.50k.wlimits$speed   <- NULL
+s5.100k.wlimits$speed  <- NULL
+s6.250k.wlimits$speed  <- NULL
 
 # RANDOMIZE DATA__________________________________________________________________________
 s1.50k.nolimits_ran    = s1.50k.nolimits[sample(nrow(s1.50k.nolimits)),]
@@ -142,7 +149,7 @@ m1.oob.rse
 m1.predict = predict(m1, s3.250k.nolimits)
 m1.test.rse = sqrt(sum((s3.250k.nolimits$duration - m1.predict$predictions)^2) / (length(m1.predict$predictions)-2))
 m1.test.rse
-
+m1
 
 # M2    HYPER PARAMETER SELECTION - NUBMER OF TREES____________________________________________________
 'http://www.rpubs.com/Mentors_Ubiqum/tunegrid_tunelength
@@ -221,7 +228,7 @@ rf_num_trees = function(data.train, data.test, list.ntrees, list.oob.rse, list.t
   list.nmtry[Count]     <<- i
   # Train Model
   print(paste('Training Model Using N-MTRY => ', i))
-  m0 = ranger(duration ~., data = data.train, num.trees = 200, mtry = i)
+  m0 = ranger(duration ~., data = data.train, num.trees = 400, mtry = i)
   # Generate OOB RSE
   print('Generating OOB RSE')
   m0.oob.rse            = round(sqrt(m0$prediction.error),4)
@@ -253,14 +260,14 @@ for (i in seq(1, ncolnames-1, 1)){
 list.nmtry
 
 #Create DataFrame
-df = data.frame(row.names = list.nmtry[1:10])
+df = data.frame(row.names = list.nmtry[1:9])
 df$oob.rse     = list.oob.rse
 df$test.rse    = list.test.rse
 
 # Graph Results
 p = ggplot() + 
-  geom_line(data = df, aes(x = list.nmtry[1:10], y = df$oob.rse, color = 'OOB RSE')) +
-  geom_line(data = df, aes(x = list.nmtry[1:10], y = df$test.rse, color = 'Test RSE')) +
+  geom_line(data = df, aes(x = list.nmtry[1:9], y = df$oob.rse, color = 'OOB RSE')) +
+  geom_line(data = df, aes(x = list.nmtry[1:9], y = df$test.rse, color = 'Test RSE')) +
   xlab('Number of Features') + 
   ylab('RSE') 
 
@@ -286,7 +293,7 @@ rf_num_trees = function(data.train, data.test, list.ntrees, list.oob.rse, list.t
   list.alpha[Count]     <<- i
   # Train Model
   print(paste('Training Model Using Alpha => ', i))
-  m0 = ranger(duration ~., data = data.train, num.trees = 200, mtry = 10, alpha = i)
+  m0 = ranger(duration ~., data = data.train, num.trees = 400, mtry = 5, alpha = i)
   # Generate OOB RSE
   print('Generating OOB RSE')
   m0.oob.rse            = round(sqrt(m0$prediction.error),4)
@@ -321,7 +328,7 @@ df$test.rse    = list.test.rse
 list.oob.rse
 # Graph Results
 p = ggplot() + 
-#  geom_line(data = df, aes(x = list.alpha, y = df$oob.rse, color = 'OOB RSE')) +
+ #geom_line(data = df, aes(x = list.alpha, y = df$oob.rse, color = 'OOB RSE')) +
   geom_line(data = df, aes(x = list.alpha, y = df$test.rse, color = 'Test RSE')) +
   xlab('ALPHA') + 
   ylab('RSE') 
@@ -352,7 +359,7 @@ rf_num_trees = function(data.train, data.test, list.ntrees, list.oob.rse, list.t
   list.node.size[Count]     <<- i
   # Train Model
   print(paste('Training Model Using Min.Node.Size => ', i))
-  m0 = ranger(duration ~., data = data.train, num.trees = 200, mtry = 10, alpha = 0.1, min.node.size = i)
+  m0 = ranger(duration ~., data = data.train, num.trees = 200, mtry = 5, alpha = 0.25, min.node.size = i)
   # Generate OOB RSE
   print('Generating OOB RSE')
   m0.oob.rse            = round(sqrt(m0$prediction.error),4)
@@ -373,8 +380,8 @@ rf_num_trees = function(data.train, data.test, list.ntrees, list.oob.rse, list.t
   print('-----------------------------------------------------------------------------')
 }
 
-# Iterate over number of mtry
-for (i in seq(1, 10, 1)){
+# Iterate over number of nodes
+for (i in seq(2, 10, 2)){
   rf_num_trees(s6.250k.wlimits_ran, s1.50k.nolimits, list.nmtry, list.oob.rse, list.test.rse, Count, i)
 }
 

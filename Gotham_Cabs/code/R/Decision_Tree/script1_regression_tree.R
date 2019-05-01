@@ -40,6 +40,16 @@ s4.50k.wlimits         = read.csv('sample2_wlimits_50k.csv')[2:12]
 s5.100k.wlimits        = read.csv('sample2_wlimits_100k.csv')[2:12]
 s6.250k.wlimits        = read.csv('sample2_wlimits_250k.csv')[2:12]
 
+
+## DROP SPEED_____________________________________________________________________________
+s1.50k.nolimits$speed  <- NULL                          
+s2.100k.nolimits$speed <- NULL
+s3.250k.nolimits$speed <- NULL
+s4.50k.wlimits$speed   <- NULL
+s5.100k.wlimits$speed  <- NULL
+s6.250k.wlimits$speed  <- NULL
+
+
 # RANDOMIZE DATA__________________________________________________________________________
 s1.50k.nolimits_ran    = s1.50k.nolimits[sample(nrow(s1.50k.nolimits)),]
 s2.100k.nolimits_ran   = s2.100k.nolimits[sample(nrow(s2.100k.nolimits)),]
@@ -83,7 +93,8 @@ query1_alldata = dbSendQuery(mydb, 'SELECT
                              ORDER BY RAND()
                              LIMIT 500000;')
 data.random.sample = fetch(query1_alldata, n = -1)
-s7.test = data.random.sample[,2:12]
+s7.test = data.random.sample[,2:11]
+
 
 
 # MODEL1___________________________________________________________________________________
@@ -98,6 +109,7 @@ s7.test = data.random.sample[,2:12]
           - yval      prediction
           - *         denotes a terminal node
 '
+
 m1.train = rpart(duration ~ ., data = s6.train, method = 'anova')
 
 # Model1 - Plot
@@ -107,6 +119,19 @@ m1.train = rpart(duration ~ ., data = s6.train, method = 'anova')
           - 3rd val                     % of observations that ended up in each leaf. 
 '
 rpart.plot(m1.train, type = 3, extra = 101, fallen.leaves = T, main = 'Regression Tree - M1')
+
+# Feature Importance
+m1.train$variable.importance
+m1.variable_impr = c(31145261100,6088384303,5156615805,5102920341,4851145889,27158090)
+m1.variable_names = c('distance', 'pickup_y', 'dropoff_x', 'pickup_x', 'dropoff_y', 'hour_')
+df = data.frame(row.names = m1.variable_names)
+df$VariableImp = m1.variable_impr
+df$Feature = m1.variable_names
+
+p = ggplot(data = df, aes(x = df$Feature, y = df$VariableImp, colour = df$Feature)) +geom_bar(stat = 'identity') +
+  xlab('Feature') + 
+  ylab('Node Purity') 
+print(p+ ggtitle('Simple Decision Tree - Training vs Test RSE'))
 
 # Model1 - Calculate Train RSE
 m1.residuals = residuals(m1.train)
@@ -119,7 +144,6 @@ m1.predict   = predict(m1.train, s1.test)
 # Model1 - Calculate Test RSE
 m1.test.rse  = sqrt(sum((s1.test$duration - m1.predict)^2) / (length(s1.test$duration) - 2)) 
 m1.test.rse
-
 
 
 # MODEL2 - CROSS VALIDATION__________________________________________________________________________
@@ -138,7 +162,7 @@ m1.test.rse
 '
 # Train Model
 m2.train = rpart(duration ~ ., data = s6.train, method = 'anova', 
-                 control = rpart.control(cp = .005, minsplit = 5, minbucket = 5, maxdepth = 10))
+                 control = rpart.control(cp = .005, minsplit = 5, minbucket = 5, maxdepth = 20))
 
 # Plot Tree
 rpart.plot(m2.train, type = 5, extra = 101, fallen.leaves = T, main = 'Regression Tree - M2')
@@ -174,6 +198,7 @@ print(paste('Model-2 Test RSE =>', round(m2.unpruned.test.rse, 4)))             
 printcp(m2.train)
 # Plot Cp - Will Plot Number of Splits vs Cp vs Error
 plotcp(m2.train)
+
 
 # Prune Tree
 m2.prune = prune(m2.train, cp = 0.001)
@@ -233,14 +258,21 @@ for (i in seq(0.1, 0.005, -.005)){
   print(paste('     CP =>', round(i, 4), ' New Data Test RSE =>', round(m1.test.rse, 4)))
   # Increate Count Index 
   index_count = index_count + 1
-  cp.index[index_count] = round(i, 4)
+  cp.index[index_count] = i
   print('------------------------------------------------------------------------------')
 }
 
 # Drop Null Value From cp.index
-cp.index = cp.index[2:41]
+cp.index
+list.train.rse
+list.test.rse
+list.test.ran.data.rse
+
+cp.index = cp.index[2:21]
 length(cp.index)
 length(list.test.rse)
+length(list.test.ran.data.rse)
+cp.index
 
 # Create DataFrame
 df = data.frame(row.names = cp.index)
@@ -259,7 +291,6 @@ p = ggplot() +
 print(p+ ggtitle('Simple Decision Tree - Training vs Test RSE'))
 
 
-df
 
 
 
